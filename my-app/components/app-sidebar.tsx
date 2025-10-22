@@ -17,6 +17,12 @@ import {
   IconSearch,
   IconSettings,
   IconUsers,
+  IconUserPlus,
+  IconPalette,
+  IconCalendar,
+  IconCreditCard,
+  IconTool,
+  IconGlass,
 } from "@tabler/icons-react"
 
 import { NavDocuments } from "@/components/nav-documents"
@@ -35,9 +41,9 @@ import {
 
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    name: "movenpick",
+    email: "movenpick@in-evan.com",
+    avatar: "/avatars/movenpick.png",
   },
   navMain: [
     {
@@ -45,25 +51,128 @@ const data = {
       url: "#",
       icon: IconDashboard,
     },
+    // {
+    //   title: "Add New Guest",
+    //   url: "#",
+    //   icon: IconUserPlus,
+    // },
     {
-      title: "Lifecycle",
+      title: "Style",
       url: "#",
-      icon: IconListDetails,
+      icon: IconPalette,
+      items: [
+        {
+          title: "Guest",
+          url: "#",
+        },
+        {
+          title: "Mini-Bar",
+          url: "#",
+        },
+        {
+          title: "Checkin",
+          url: "#",
+        },
+      ],
     },
     {
-      title: "Analytics",
-      url: "#",
-      icon: IconChartBar,
-    },
-    {
-      title: "Projects",
-      url: "#",
-      icon: IconFolder,
-    },
-    {
-      title: "Team",
+      title: "Guests",
       url: "#",
       icon: IconUsers,
+      items: [
+        {
+          title: "Checked In",
+          url: "#",
+        },
+        {
+          title: "Checked Out",
+          url: "#",
+        },
+        {
+          title: "Previously Checked Out Before",
+          url: "#",
+        },
+        {
+          title: "Cancelled",
+          url: "#",
+        },
+        {
+          title: "Enhance Your Stays Payments",
+          url: "#",
+        },
+        {
+          title: "Offer of Upgrade Feedback",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Reservations",
+      url: "#",
+      icon: IconCalendar,
+      items: [
+        {
+          title: "What Type",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Payments",
+      url: "#",
+      icon: IconCreditCard,
+      items: [
+        {
+          title: "Cash",
+          url: "#",
+        },
+        {
+          title: "Visa",
+          url: "#",
+        },
+        {
+          title: "Apple Pay",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Operation",
+      url: "#",
+      icon: IconTool,
+      items: [
+        {
+          title: "Cleaning Room",
+          url: "#",
+        },
+        {
+          title: "Mini Bar Stuff",
+          url: "#",
+        },
+        {
+          title: "Dining in the Room",
+          url: "#",
+        },
+      ],
+    },
+    {
+      title: "Mini Bar",
+      url: "#",
+      icon: IconGlass,
+      items: [
+        {
+          title: "Add New Item",
+          url: "#",
+        },
+        {
+          title: "Edit",
+          url: "#",
+        },
+        {
+          title: "Upload Picture",
+          url: "#",
+        },
+      ],
     },
   ],
   navClouds: [
@@ -116,11 +225,6 @@ const data = {
   ],
   navSecondary: [
     {
-      title: "Settings",
-      url: "#",
-      icon: IconSettings,
-    },
-    {
       title: "Get Help",
       url: "#",
       icon: IconHelp,
@@ -129,6 +233,11 @@ const data = {
       title: "Search",
       url: "#",
       icon: IconSearch,
+    },
+    {
+      title: "Settings",
+      url: "#",
+      icon: IconSettings,
     },
   ],
   documents: [
@@ -141,11 +250,6 @@ const data = {
       name: "Reports",
       url: "#",
       icon: IconReport,
-    },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: IconFileWord,
     },
   ],
 }
@@ -162,7 +266,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             >
               <a href="#">
                 <IconInnerShadowTop className="!size-5" />
-                <span className="text-base font-semibold">Acme Inc.</span>
+                <span className="text-base font-semibold">Evan Inc.</span>
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>
