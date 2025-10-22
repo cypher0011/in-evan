@@ -1,4 +1,5 @@
-import { IconTrendingDown, IconTrendingUp } from "@tabler/icons-react"
+import Link from "next/link"
+import { IconTrendingDown, IconTrendingUp, IconUsers } from "@tabler/icons-react"
 
 import { Badge } from "@/components/ui/badge"
 import {
@@ -35,28 +36,31 @@ export function SectionCards() {
           </div>
         </CardFooter>
       </Card>
-      <Card className="@container/card">
-        <CardHeader>
-          <CardDescription>New Customers</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
-            1,234
-          </CardTitle>
-          <CardAction>
-            <Badge variant="outline">
-              <IconTrendingDown />
-              -20%
-            </Badge>
-          </CardAction>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1.5 text-sm">
-          <div className="line-clamp-1 flex gap-2 font-medium">
-            Down 20% this period <IconTrendingDown className="size-4" />
-          </div>
-          <div className="text-muted-foreground">
-            Acquisition needs attention
-          </div>
-        </CardFooter>
-      </Card>
+      <Link href="/guests" className="block">
+        <Card className="@container/card cursor-pointer transition-all hover:shadow-md hover:scale-[1.02]">
+          <CardHeader>
+            <CardDescription>Total Guests</CardDescription>
+            <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl flex items-center gap-2">
+              <IconUsers className="size-8" />
+              5
+            </CardTitle>
+            <CardAction>
+              <Badge variant="outline">
+                <IconTrendingUp />
+                +2
+              </Badge>
+            </CardAction>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1.5 text-sm">
+            <div className="line-clamp-1 flex gap-2 font-medium">
+              View all guest reservations
+            </div>
+            <div className="text-muted-foreground">
+              Click to manage guests
+            </div>
+          </CardFooter>
+        </Card>
+      </Link>
       <Card className="@container/card">
         <CardHeader>
           <CardDescription>Active Accounts</CardDescription>

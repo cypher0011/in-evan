@@ -57,6 +57,11 @@ const data = {
     //   icon: IconUserPlus,
     // },
     {
+      title: "Guests",
+      url: "/guests",
+      icon: IconUsers
+    },
+    {
       title: "Style",
       url: "#",
       icon: IconPalette,
@@ -71,37 +76,6 @@ const data = {
         },
         {
           title: "Checkin",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Guests",
-      url: "#",
-      icon: IconUsers,
-      items: [
-        {
-          title: "Checked In",
-          url: "#",
-        },
-        {
-          title: "Checked Out",
-          url: "#",
-        },
-        {
-          title: "Previously Checked Out Before",
-          url: "#",
-        },
-        {
-          title: "Cancelled",
-          url: "#",
-        },
-        {
-          title: "Enhance Your Stays Payments",
-          url: "#",
-        },
-        {
-          title: "Offer of Upgrade Feedback",
           url: "#",
         },
       ],
