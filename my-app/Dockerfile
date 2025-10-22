@@ -1,0 +1,12 @@
+# Use official Ubuntu base as requested
+FROM node:22
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci
+
+COPY . .
+
+CMD ["npm", "start"]
