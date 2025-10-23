@@ -12,6 +12,10 @@
 - docker ps <!-- to see what process are working -->
 - docker stop 98bcfb02b535
 
+# AI tools
+- claude mcp add gemini-cli -- npx -y gemini-mcp-tool
+
+
 ### used in stack
 # Core Framework
 - Next.js
@@ -29,3 +33,7 @@
 
 # Fun add-on
 - remix
+
+# Ui components
+- shadcn
+<!-- - launchuicomponents -->
