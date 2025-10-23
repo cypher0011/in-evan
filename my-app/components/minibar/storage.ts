@@ -1,11 +1,18 @@
+export type Category = "Beverage" | "Snack" | "Dessert" | "Water" | "Alcohol" | "Main Course" | "Breakfast" | "Other"
+
 export interface MiniItem {
-  id: string;
-  name: string;
-  priceSar: number;
-  imageDataUrl?: string;
-  hot: boolean;
-  description?: string; // 🆕
-  createdAt: string;
+  id: string
+  name: string
+  category: Category
+  customCategory?: string
+  price: number
+  imageUrl?: string
+  allergicDetails?: string
+  calories?: number
+  stockQuantity: number
+  description?: string
+  isVisible: boolean
+  createdAt: string
 }
 
 

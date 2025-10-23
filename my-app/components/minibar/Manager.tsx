@@ -1,387 +1,723 @@
-"use client";
+"use client"
 
-import React, { useEffect, useMemo, useState } from "react";
-import { loadItems, saveItems, type MiniItem } from "./storage";
-import ItemDetailsSheet from "@/components/minibar/ItemDetailsSheet";
+import * as React from "react"
+import { loadItems, saveItems, type MiniItem, type Category } from "./storage"
+import {
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table"
+import {
+  IconBottle,
+  IconCandy,
+  IconChevronLeft,
+  IconChevronRight,
+  IconCoffee,
+  IconDotsVertical,
+  IconEdit,
+  IconEye,
+  IconEyeOff,
+  IconPhoto,
+  IconPlus,
+  IconSearch,
+  IconTrash,
+  IconTool,
+} from "@tabler/icons-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Switch } from "@/components/ui/switch"
 
-/** Downscale an image to keep localStorage usage small */
-async function fileToSmallDataUrl(file: File, maxSide = 256): Promise<string> {
-  const dataUrl = await new Promise<string>((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(String(r.result));
-    r.onerror = rej;
-    r.readAsDataURL(file);
-  });
+const SAMPLE_DATA: MiniItem[] = [
+  {
+    id: "1",
+    name: "Coca Cola",
+    category: "Beverage",
+    price: 15,
+    imageUrl: "",
+    allergicDetails: "",
+    calories: 140,
+    stockQuantity: 24,
+    description: "Classic Coca-Cola 330ml can",
+    isVisible: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "2",
+    name: "Pringles Original",
+    category: "Snack",
+    price: 25,
+    imageUrl: "",
+    allergicDetails: "Contains wheat, milk",
+    calories: 150,
+    stockQuantity: 15,
+    description: "Crispy potato chips, 165g",
+    isVisible: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "3",
+    name: "Snickers Bar",
+    category: "Dessert",
+    price: 12,
+    imageUrl: "",
+    allergicDetails: "Contains peanuts, milk, soy",
+    calories: 250,
+    stockQuantity: 30,
+    description: "Chocolate bar with peanuts and caramel",
+    isVisible: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "4",
+    name: "Evian Water",
+    category: "Water",
+    price: 10,
+    imageUrl: "",
+    allergicDetails: "",
+    calories: 0,
+    stockQuantity: 48,
+    description: "Natural mineral water 500ml",
+    isVisible: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "5",
+    name: "Red Bull",
+    category: "Beverage",
+    price: 20,
+    imageUrl: "",
+    allergicDetails: "Contains caffeine",
+    calories: 110,
+    stockQuantity: 0,
+    description: "Energy drink 250ml",
+    isVisible: false,
+    createdAt: new Date().toISOString(),
+  },
+]
 
-  const img = await new Promise<HTMLImageElement>((res, rej) => {
-    const i = new Image();
-    i.onload = () => res(i);
-    i.onerror = rej;
-    i.src = dataUrl;
-  });
+async function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result))
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
 
-  const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-  const w = Math.round(img.width * scale);
-  const h = Math.round(img.height * scale);
-
-  const canvas = document.createElement("canvas");
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return dataUrl;
-  ctx.drawImage(img, 0, 0, w, h);
-  return canvas.toDataURL("image/jpeg", 0.8);
+const getCategoryIcon = (category: Category) => {
+  switch (category) {
+    case "Beverage":
+      return <IconCoffee className="size-5" />
+    case "Water":
+      return <IconBottle className="size-5" />
+    case "Snack":
+    case "Dessert":
+      return <IconCandy className="size-5" />
+    default:
+      return <IconTool className="size-5" />
+  }
 }
 
 export default function MiniBarManager() {
-  // Data
-  const [items, setItems] = useState<MiniItem[]>(
-    () => (typeof window === "undefined" ? [] : loadItems())
-  );
+  const [items, setItems] = React.useState<MiniItem[]>(() => {
+    if (typeof window === "undefined") return []
+    const loaded = loadItems()
+    if (loaded.length === 0) {
+      saveItems(SAMPLE_DATA)
+      return SAMPLE_DATA
+    }
+    return loaded
+  })
 
-  // Hydration guard (so table doesn’t render mismatched HTML on first paint)
-  const [hydrated, setHydrated] = useState(false);
-  useEffect(() => setHydrated(true), []);
+  const [hydrated, setHydrated] = React.useState(false)
+  const [dialogOpen, setDialogOpen] = React.useState(false)
+  const [editingItem, setEditingItem] = React.useState<MiniItem | null>(null)
 
-  // Form state
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState<string>("");
-  const [description, setDescription] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | undefined>();
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
+  const [rowSelection, setRowSelection] = React.useState({})
 
-  // View/Details sheet
-  const [selectedItem, setSelectedItem] = useState<MiniItem | null>(null);
+  const [formData, setFormData] = React.useState<Partial<MiniItem>>({
+    name: "",
+    category: "Beverage",
+    customCategory: "",
+    price: 0,
+    description: "",
+    allergicDetails: "",
+    calories: undefined,
+    stockQuantity: 0,
+    isVisible: true,
+    imageUrl: "",
+  })
 
-  // Edit mode state
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingItem, setEditingItem] = useState<MiniItem | null>(null);
+  React.useEffect(() => setHydrated(true), [])
+  React.useEffect(() => {
+    if (typeof window !== "undefined") saveItems(items)
+  }, [items])
 
-  // Persist on any change
-  useEffect(() => {
-    if (typeof window !== "undefined") saveItems(items);
-  }, [items]);
-
-  // ---- helpers --------------------------------------------------------------
-  function resetForm() {
-    setName("");
-    setPrice("");
-    setDescription("");
-    setFile(null);
-    setPreview(undefined);
-    setIsEditing(false);
-    setEditingItem(null);
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      category: "Beverage",
+      customCategory: "",
+      price: 0,
+      description: "",
+      allergicDetails: "",
+      calories: undefined,
+      stockQuantity: 0,
+      isVisible: true,
+      imageUrl: "",
+    })
+    setEditingItem(null)
   }
 
-  async function onPick(f: File | null) {
-    setFile(f);
-    if (f) setPreview(await fileToSmallDataUrl(f));
-    else setPreview(undefined);
+  const openAddDialog = () => {
+    resetForm()
+    setDialogOpen(true)
   }
 
-  // ---- add / edit -----------------------------------------------------------
-  async function submitItem(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim()) return;
+  const openEditDialog = (item: MiniItem) => {
+    setEditingItem(item)
+    setFormData(item)
+    setDialogOpen(true)
+  }
 
-    let imageDataUrl = preview;
-    if (!imageDataUrl && file) imageDataUrl = await fileToSmallDataUrl(file);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
 
-    if (isEditing && editingItem) {
-      // SAVE CHANGES
+    if (!formData.name?.trim()) return
+
+    if (editingItem) {
       const updated: MiniItem = {
         ...editingItem,
-        name: name.trim(),
-        priceSar: Number(price || 0),
-        description: description.trim(),
-        imageDataUrl,
-      };
-      setItems((old) => old.map((it) => (it.id === editingItem.id ? updated : it)));
-      resetForm();
-      return;
+        ...formData,
+        name: formData.name!.trim(),
+      }
+      setItems((old) => old.map((it) => (it.id === editingItem.id ? updated : it)))
+    } else {
+      const newItem: MiniItem = {
+        id: crypto.randomUUID(),
+        name: formData.name!.trim(),
+        category: formData.category || "Other",
+        customCategory: formData.category === "Other" ? formData.customCategory?.trim() : undefined,
+        price: formData.price || 0,
+        description: formData.description?.trim() || "",
+        allergicDetails: formData.allergicDetails?.trim() || "",
+        calories: formData.calories,
+        stockQuantity: formData.stockQuantity || 0,
+        isVisible: formData.isVisible ?? true,
+        imageUrl: formData.imageUrl || "",
+        createdAt: new Date().toISOString(),
+      }
+      setItems((old) => [newItem, ...old])
     }
 
-    // ADD NEW
-    const newItem: MiniItem = {
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      priceSar: Number(price || 0),
-      imageDataUrl,
-      description: description.trim(),
-      hot: false,
-      createdAt: new Date().toISOString(),
-    };
-
-    setItems((old) => [newItem, ...old]);
-    resetForm();
+    setDialogOpen(false)
+    resetForm()
   }
 
-  function handleEdit(item: MiniItem) {
-    setEditingItem(item);
-    setIsEditing(true);
-    setName(item.name);
-    setPrice(String(item.priceSar ?? ""));
-    setDescription(item.description ?? "");
-    setPreview(item.imageDataUrl);
-    setFile(null);
+  const handleDelete = (id: string) => {
+    setItems((old) => old.filter((i) => i.id !== id))
   }
 
-  // ---- remove / hot ---------------------------------------------------------
-  function remove(id: string) {
-    setItems((old) => old.filter((i) => i.id !== id));
-    if (selectedItem?.id === id) setSelectedItem(null);
-  }
-
-  function toggleHot(id: string) {
+  const toggleVisibility = (id: string) => {
     setItems((old) =>
-      old.map((i) => (i.id === id ? { ...i, hot: !i.hot } : i))
-    );
+      old.map((i) => (i.id === id ? { ...i, isVisible: !i.isVisible } : i))
+    )
   }
 
-  const hotCount = useMemo(() => items.filter((i) => i.hot).length, [items]);
+  const updateStock = (id: string, newQuantity: number) => {
+    setItems((old) =>
+      old.map((i) => (i.id === id ? { ...i, stockQuantity: Math.max(0, newQuantity) } : i))
+    )
+  }
 
-  // ---- UI -------------------------------------------------------------------
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const dataUrl = await fileToDataUrl(file)
+      setFormData((prev) => ({ ...prev, imageUrl: dataUrl }))
+    }
+  }
+
+  const handleBulkDelete = () => {
+    const selectedIds = Object.keys(rowSelection)
+    setItems((old) => old.filter((item) => !selectedIds.includes(item.id)))
+    setRowSelection({})
+  }
+
+  const columns: ColumnDef<MiniItem>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+          aria-label="Select all"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(value) => row.toggleSelected(!!value)}
+          aria-label="Select row"
+        />
+      ),
+      enableSorting: false,
+      enableHiding: false,
+    },
+    {
+      accessorKey: "imageUrl",
+      header: "Image",
+      cell: ({ row }) => {
+        const item = row.original
+        return item.imageUrl ? (
+          <Avatar className="size-10 rounded">
+            <AvatarImage src={item.imageUrl} />
+            <AvatarFallback><IconPhoto className="size-5" /></AvatarFallback>
+          </Avatar>
+        ) : (
+          <div className="size-10 rounded border flex items-center justify-center bg-muted">
+            <IconPhoto className="size-5 text-muted-foreground" />
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => {
+        const item = row.original
+        return (
+          <div>
+            <div className="font-medium">{item.name}</div>
+            {item.description && (
+              <div className="text-sm text-muted-foreground truncate max-w-xs">
+                {item.description}
+              </div>
+            )}
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "category",
+      header: "Category",
+      cell: ({ row }) => {
+        const item = row.original
+        return (
+          <Badge variant="outline" className="gap-1.5">
+            {getCategoryIcon(item.category)}
+            {item.category === "Other" && item.customCategory ? item.customCategory : item.category}
+          </Badge>
+        )
+      },
+    },
+    {
+      accessorKey: "price",
+      header: "Price",
+      cell: ({ row }) => <div className="font-medium">${row.original.price}</div>,
+    },
+    {
+      accessorKey: "stockQuantity",
+      header: "Stock",
+      cell: ({ row }) => {
+        const item = row.original
+        return (
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              min="0"
+              value={item.stockQuantity}
+              onChange={(e) => updateStock(item.id, Number(e.target.value))}
+              className="w-20"
+              onClick={(e) => e.stopPropagation()}
+            />
+            <span className={`text-sm ${item.stockQuantity === 0 ? "text-destructive" : item.stockQuantity < 5 ? "text-yellow-600" : "text-muted-foreground"}`}>
+              {item.stockQuantity === 0 ? "Out" : item.stockQuantity < 5 ? "Low" : ""}
+            </span>
+          </div>
+        )
+      },
+    },
+    {
+      accessorKey: "isVisible",
+      header: "Visibility",
+      cell: ({ row }) => {
+        const item = row.original
+        return (
+          <Button
+            variant={item.isVisible ? "default" : "outline"}
+            size="sm"
+            onClick={() => toggleVisibility(item.id)}
+            className="gap-1.5"
+          >
+            {item.isVisible ? <><IconEye className="size-4" /> Visible</> : <><IconEyeOff className="size-4" /> Hidden</>}
+          </Button>
+        )
+      },
+    },
+    {
+      id: "actions",
+      enableHiding: false,
+      cell: ({ row }) => {
+        const item = row.original
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <IconDotsVertical className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem onClick={() => openEditDialog(item)}>
+                <IconEdit className="size-4 mr-2" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => handleDelete(item.id)}
+                className="text-destructive"
+              >
+                <IconTrash className="size-4 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
+    },
+  ]
+
+  const table = useReactTable({
+    data: items,
+    columns,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    onColumnVisibilityChange: setColumnVisibility,
+    onRowSelectionChange: setRowSelection,
+    state: { sorting, columnFilters, columnVisibility, rowSelection },
+  })
+
+  if (!hydrated) {
+    return <div className="p-6">Loading...</div>
+  }
+
   return (
     <div className="space-y-6">
-      {/* ===================== Add / Edit form ===================== */}
-      <div className="rounded-lg border p-4">
-        <h2 className="text-lg font-semibold mb-3">Add Mini-Bar Item</h2>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-semibold">Minibar Management</h1>
+          <p className="text-muted-foreground text-sm md:text-base">
+            Manage your hotel minibar items and inventory
+          </p>
+        </div>
+        <Button onClick={openAddDialog} className="gap-2">
+          <IconPlus className="size-4" /> Add Item
+        </Button>
+      </div>
 
-        <form onSubmit={submitItem} className="grid gap-4 md:grid-cols-3">
-          {/* Name */}
-          <div className="flex flex-col gap-1">
-            <label className="text-sm">Name</label>
-            <input
-              className="border rounded px-3 py-2"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Snickers"
-            />
-          </div>
-
-          {/* Price */}
-          <div className="flex flex-col gap-1">
-            <label className="text-sm">Price (SAR)</label>
-            <input
-              className="border rounded px-3 py-2"
-              type="number"
-              step="0.01"
-              min="0"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              placeholder="8.00"
-            />
-          </div>
-
-          {/* Description */}
-          <div className="flex flex-col gap-1 md:col-span-3">
-            <label className="text-sm">Description</label>
-            <textarea
-              className="border rounded px-3 py-2 resize-none"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe the item..."
-            />
-          </div>
-
-          {/* Image picker (button look) */}
-          <div className="flex items-center gap-3 md:col-span-1">
-            <input
-              id="image-upload"
-              type="file"
-              accept="image/*"
-              onChange={(e) => onPick(e.target.files?.[0] ?? null)}
-              className="hidden"
-            />
-            <label
-              htmlFor="image-upload"
-              className="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-md shadow-md hover:bg-blue-700 transition"
-
-            >
-              ➕ Choose Image
-            </label>
-            {file && (
-              <span className="text-xs text-gray-600 truncate max-w-[160px]">
-                {file.name}
-              </span>
-            )}
-          </div>
-
-          {/* Preview (if chosen) */}
-          {preview && (
-            <div className="md:col-span-2 flex items-center">
-              <img
-                src={preview}
-                alt="preview"
-                className="h-20 w-20 rounded border object-cover"
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Items ({table.getFilteredRowModel().rows.length})</CardTitle>
+            <div className="relative w-64">
+              <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <Input
+                placeholder="Search items..."
+                value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
+                onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
+                className="pl-9"
               />
             </div>
-          )}
-
-          {/* Actions */}
-          <div className="col-span-full flex items-center gap-3 pt-1">
-            <button
-              type="submit"
-              className="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-md shadow-md hover:bg-blue-700 transition"
-            >
-              {isEditing ? "💾 Save Changes" : "➕ Submit Item"}
-            </button>
-
-            {isEditing && (
-              <button
-                type="button"
-                onClick={resetForm}
-                className="inline-flex items-center justify-center rounded-md border px-4 py-2 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={resetForm}
-              className="bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-md shadow-md hover:bg-blue-700 transition"
-            >
-              Clear
-            </button>
           </div>
-        </form>
-      </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {table.getFilteredSelectedRowModel().rows.length > 0 && (
+            <div className="flex items-center justify-between gap-2 p-4 bg-muted/50">
+              <div className="text-sm text-muted-foreground">
+                {table.getFilteredSelectedRowModel().rows.length} of{" "}
+                {table.getFilteredRowModel().rows.length} row(s) selected
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleBulkDelete}
+                className="gap-2"
+              >
+                <IconTrash className="size-4" />
+                Delete Selected
+              </Button>
+            </div>
+          )}
+          <div className="rounded-lg border-t overflow-x-auto">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => (
+                      <TableHead key={header.id}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(header.column.columnDef.header, header.getContext())}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24 text-center">
+                      No items found.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <div className="flex items-center justify-between gap-4 p-4 border-t">
+            <div className="text-sm text-muted-foreground">
+              Showing {table.getRowModel().rows.length} of {table.getFilteredRowModel().rows.length} item(s)
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                <IconChevronLeft className="size-4" />
+              </Button>
+              <span className="text-sm">
+                Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                <IconChevronRight className="size-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* ===================== Items table ===================== */}
-      <div className="rounded-lg border p-4">
-        <div className="flex items-center justify-between mb-3">
-  <h3 className="font-semibold">Items</h3>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingItem ? "Edit Item" : "Add New Item"}</DialogTitle>
+            <DialogDescription>
+              {editingItem ? "Update the minibar item details" : "Add a new item to your minibar"}
+            </DialogDescription>
+          </DialogHeader>
 
-  {/* 👇 Either: hide until hydrated */}
-  {/* {hydrated && (
-    <span className="text-sm text-gray-500">Hot: {hotCount}</span>
-  )} */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Item Name *</Label>
+                <Input
+                  id="name"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="e.g., Coca Cola"
+                />
+              </div>
 
-  {}
-  <span
-    className="text-sm text-gray-500"
-    suppressHydrationWarning
-  >
-    Hot: {hydrated ? hotCount : "—"}
-  </span>
-</div>
+              <div className="space-y-2">
+                <Label htmlFor="category">Category *</Label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(v) => {
+                    setFormData((p) => ({ ...p, category: v as Category }))
+                    if (v !== "Other") {
+                      setFormData((p) => ({ ...p, customCategory: "" }))
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Beverage">Beverage</SelectItem>
+                    <SelectItem value="Snack">Snack</SelectItem>
+                    <SelectItem value="Dessert">Dessert</SelectItem>
+                    <SelectItem value="Water">Water</SelectItem>
+                    <SelectItem value="Alcohol">Alcohol</SelectItem>
+                    <SelectItem value="Main Course">Main Course</SelectItem>
+                    <SelectItem value="Breakfast">Breakfast</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-left text-gray-500">
-              <tr>
-                <th className="py-2 pr-3">Image</th>
-                <th className="py-2 pr-3">Name</th>
-                <th className="py-2 pr-3">Price</th>
-                <th className="py-2 pr-3">Hot</th>
-                <th className="py-2">Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {!hydrated ? (
-                <tr>
-                  <td className="py-6 text-gray-400" colSpan={5}>
-                    Loading…
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td className="py-6 text-gray-500" colSpan={5}>
-                    No items yet.
-                  </td>
-                </tr>
-              ) : (
-                items.map((i) => (
-                  <tr
-                    key={i.id}
-                    className="border-t cursor-pointer hover:bg-gray-50 transition"
-                    onClick={() => setSelectedItem(i)}
-                  >
-                    <td className="py-2 pr-3">
-                      {i.imageDataUrl ? (
-                        <img
-                          src={i.imageDataUrl}
-                          alt={i.name}
-                          className="h-10 w-10 rounded object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        "—"
-                      )}
-                    </td>
-
-                    <td className="py-2 pr-3">{i.name}</td>
-
-                    <td className="py-2 pr-3">
-                      SAR {Number(i.priceSar).toFixed(2)}
-                    </td>
-
-                    <td className="py-2 pr-3">
-                      {i.hot ? (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleHot(i.id);
-                          }}
-                          className="bg-red-600 text-black text-xs font-semibold px-4 py-1.5 rounded-md shadow-md hover:bg-red-700 transition"
-                        >
-                          Remove
-                        </button>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleHot(i.id);
-                          }}
-                          className="bg-rose-500 text-black text-xs font-semibold px-4 py-1.5 rounded-md shadow-md hover:bg-rose-600 transition"
-                        >
-                          HOT 🔥
-                        </button>
-                      )}
-                    </td>
-
-                    <td className="py-2">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEdit(i);
-                          }}
-                          className="bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-md shadow-md hover:bg-blue-700 transition"
-
-                        >
-                          Edit
-                        </button>
-
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            remove(i.id);
-                          }}
-                          className="bg-blue-600 text-white text-xs font-bold px-4 py-1.5 rounded-md shadow-md hover:bg-blue-700 transition"
-
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+              {formData.category === "Other" && (
+                <div className="space-y-2">
+                  <Label htmlFor="customCategory">Custom Category *</Label>
+                  <Input
+                    id="customCategory"
+                    required
+                    value={formData.customCategory}
+                    onChange={(e) => setFormData((p) => ({ ...p, customCategory: e.target.value }))}
+                    placeholder="e.g., Hot Meals, Fresh Juice"
+                  />
+                </div>
               )}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
-      {/* ===================== Slide-over details ===================== */}
-      <ItemDetailsSheet
-        item={selectedItem}
-        open={!!selectedItem}
-        onClose={() => setSelectedItem(null)}
-      />
+              <div className="space-y-2">
+                <Label htmlFor="price">Price ($) *</Label>
+                <Input
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  value={formData.price}
+                  onChange={(e) => setFormData((p) => ({ ...p, price: Number(e.target.value) }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="calories">Calories (optional)</Label>
+                <Input
+                  id="calories"
+                  type="number"
+                  min="0"
+                  value={formData.calories || ""}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, calories: e.target.value ? Number(e.target.value) : undefined }))
+                  }
+                  placeholder="e.g., 140"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="stockQuantity">Stock Quantity *</Label>
+                <Input
+                  id="stockQuantity"
+                  type="number"
+                  min="0"
+                  required
+                  value={formData.stockQuantity}
+                  onChange={(e) => setFormData((p) => ({ ...p, stockQuantity: Number(e.target.value) }))}
+                  placeholder="e.g., 24"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))}
+                placeholder="Brief description of the item..."
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="allergicDetails">Allergic Details</Label>
+              <Input
+                id="allergicDetails"
+                value={formData.allergicDetails}
+                onChange={(e) => setFormData((p) => ({ ...p, allergicDetails: e.target.value }))}
+                placeholder="e.g., Contains nuts, dairy"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="image">Image</Label>
+              <Input id="image" type="file" accept="image/*" onChange={handleImageUpload} />
+              {formData.imageUrl && (
+                <div className="mt-2">
+                  <img src={formData.imageUrl} alt="Preview" className="h-20 w-20 rounded object-cover border" />
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                id="isVisible"
+                checked={formData.isVisible}
+                onCheckedChange={(checked) => setFormData((p) => ({ ...p, isVisible: checked }))}
+              />
+              <Label htmlFor="isVisible">Visible to Guests</Label>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit">{editingItem ? "Save Changes" : "Add Item"}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
-  );
+  )
 }

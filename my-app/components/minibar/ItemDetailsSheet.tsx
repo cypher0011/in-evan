@@ -73,12 +73,12 @@ export default function ItemDetailsSheet({
       <p className="flex items-center gap-2">
         <span className="font-semibold text-gray-800">Status:</span>
         {item.hot ? (
-          <span className="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 ring-1 ring-inset ring-red-200">
-            🔥 Hot Item
+          <span className="inline-flex items-center rounded-full bg-green-50 px-2 py-0.5 text-xs font-semibold text-green-700 ring-1 ring-inset ring-green-200">
+            In the menu
           </span>
         ) : (
           <span className="inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 text-xs font-medium text-gray-700 ring-1 ring-inset ring-gray-200">
-            Normal
+            Not showed
           </span>
         )}
       </p>

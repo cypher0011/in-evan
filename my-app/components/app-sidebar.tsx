@@ -81,6 +81,17 @@ const data = {
       ],
     },
     {
+      title: "feedback",
+      url: "/feedback",
+      icon: IconListDetails,
+      items: [
+        {
+          title: "What Type",
+          url: "#",
+        },
+      ],
+    },
+    {
       title: "Style",
       url: "#",
       icon: IconPalette,

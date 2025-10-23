@@ -16,25 +16,35 @@ import {
 import {
   IconAdjustmentsHorizontal,
   IconBed,
+  IconBook,
+  IconBriefcase,
   IconCalendar,
-  IconChevronDown,
+  IconCar,
+  IconCash,
   IconChevronLeft,
   IconChevronRight,
   IconCircleCheck,
   IconCircleX,
-  IconCurrencyDollar,
+  IconClock,
+  IconCreditCard,
+  IconCrown,
   IconDotsVertical,
   IconEdit,
   IconFileExport,
-  IconMail,
+  IconFlag,
+  IconFlower,
+  IconId,
   IconNotes,
   IconPhone,
   IconPlus,
   IconSearch,
+  IconShoppingCart,
+  IconStar,
+  IconStarFilled,
   IconTrash,
-  IconUser,
   IconUsers,
 } from "@tabler/icons-react"
+import { format } from "date-fns"
 
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
@@ -78,37 +88,127 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-// --- TYPES AND MOCK DATA ---
+export type Order = {
+  id: string
+  category: "Minibar" | "Transportation" | "Flowers" | "Car Wash" | "Room Service" | "Spa" | "Laundry" | "Other"
+  item: string
+  quantity: number
+  price: number
+  dateOrdered: string
+  status: "Pending" | "Completed" | "Cancelled"
+  notes?: string
+}
+
+export type Feedback = {
+  rating: 1 | 2 | 3 | 4 | 5
+  comment: string
+  date: string
+}
 
 export type Guest = {
   id: number
-  uniqueId: string
-  roomNum: string
-  firstName: string
-  lastName: string
-  email: string
-  avatarUrl: string
-  checkIn: string
-  checkOut: string
+  reservationNumber: string
   status: "Confirmed" | "Checked In" | "Checked Out" | "Cancelled"
-  paid: boolean
-  amount: number
-  phone: string
-  guests: number
-  specialRequests: string
+  profile: {
+    firstName: string
+    lastName: string
+    email: string
+    phone: string
+    avatarUrl: string
+    nationality: string
+    countryCode: string
+    passportOrId: string
+  }
+  booking: {
+    checkIn: string
+    checkOut: string
+    roomNumber: string
+    roomType: string
+    numberOfGuests: number
+    source: string
+  }
+  revenue: {
+    totalPaid: number
+    roomCharges: number
+    serviceCharges: number
+    currency: string
+  }
+  orders: Order[]
+  feedback: Feedback | null
+  preferences: {
+    specialRequests: string
+    internalNotes: string
+  }
 }
 
 const guestData: Guest[] = [
-  { id: 1, uniqueId: "JDXP4K", roomNum: "101", firstName: "John", lastName: "Doe", email: "john.doe@example.com", avatarUrl: "/avatars/movenpick.png", checkIn: "2024-07-15", checkOut: "2024-07-20", status: "Checked Out", paid: true, amount: 500, phone: "+1 234 567 8900", guests: 2, specialRequests: "Extra towels, late checkout." },
-  { id: 2, uniqueId: "SSMT7R", roomNum: "205", firstName: "Sarah", lastName: "Smith", email: "sarah.smith@example.com", avatarUrl: "", checkIn: "2024-07-16", checkOut: "2024-07-18", status: "Checked In", paid: true, amount: 350, phone: "+1 234 567 8901", guests: 1, specialRequests: "None." },
-  { id: 3, uniqueId: "MJHN9Q", roomNum: "310", firstName: "Michael", lastName: "Johnson", email: "michael.j@example.com", avatarUrl: "/avatars/movenpick.png", checkIn: "2024-07-20", checkOut: "2024-07-28", status: "Confirmed", paid: false, amount: 800, phone: "+1 234 567 8902", guests: 3, specialRequests: "High floor, away from elevator." },
-  { id: 4, uniqueId: "EBRW3N", roomNum: "412", firstName: "Emily", lastName: "Brown", email: "emily.brown@example.com", avatarUrl: "", checkIn: "2024-06-17", checkOut: "2024-06-19", status: "Cancelled", paid: false, amount: 280, phone: "+1 234 567 8903", guests: 2, specialRequests: "Hypoallergenic pillows." },
-  { id: 5, uniqueId: "DWLS8M", roomNum: "508", firstName: "David", lastName: "Wilson", email: "david.wilson@example.com", avatarUrl: "/avatars/movenpick.png", checkIn: "2024-08-01", checkOut: "2024-08-10", status: "Confirmed", paid: true, amount: 1200, phone: "+1 234 567 8904", guests: 4, specialRequests: "Baby crib, connecting rooms." },
-  { id: 6, uniqueId: "LMRG2P", roomNum: "102", firstName: "Linda", lastName: "Miller", email: "linda.miller@example.com", avatarUrl: "", checkIn: "2024-07-18", checkOut: "2024-07-22", status: "Checked In", paid: false, amount: 420, phone: "+1 234 567 8905", guests: 2, specialRequests: "Room with a view." },
-  { id: 7, uniqueId: "KDPQ1Z", roomNum: "303", firstName: "Kevin", lastName: "Davis", email: "kevin.davis@example.com", avatarUrl: "/avatars/movenpick.png", checkIn: "2024-07-25", checkOut: "2024-07-30", status: "Confirmed", paid: false, amount: 650, phone: "+1 234 567 8906", guests: 1, specialRequests: "Early check-in if possible." },
+  {
+    id: 1,
+    reservationNumber: "JDXP4K",
+    status: "Checked Out",
+    profile: { firstName: "John", lastName: "Doe", email: "john.doe@example.com", phone: "+1 234 567 8900", avatarUrl: "", nationality: "American", countryCode: "US", passportOrId: "A12345678" },
+    booking: { checkIn: "2024-07-15", checkOut: "2024-07-20", roomNumber: "101", roomType: "Deluxe King", numberOfGuests: 2, source: "Booking.com" },
+    revenue: { totalPaid: 750, roomCharges: 500, serviceCharges: 250, currency: "USD" },
+    orders: [
+      { id: "ORD001", category: "Flowers", item: "Rose bouquet for anniversary", quantity: 1, price: 85, dateOrdered: "2024-07-15T14:30:00", status: "Completed", notes: "Delivered to room upon arrival" },
+      { id: "ORD002", category: "Minibar", item: "2x Champagne, 1x Chocolates", quantity: 3, price: 120, dateOrdered: "2024-07-16T20:15:00", status: "Completed" },
+      { id: "ORD003", category: "Room Service", item: "Breakfast in bed", quantity: 2, price: 45, dateOrdered: "2024-07-17T08:00:00", status: "Completed" }
+    ],
+    feedback: { rating: 5, comment: "Amazing stay! The flower arrangement was beautiful and the staff was incredibly attentive. Will definitely return for our next anniversary.", date: "2024-07-21" },
+    preferences: { specialRequests: "Extra towels, late checkout.", internalNotes: "Anniversary trip. Left a positive review last time." }
+  },
+  {
+    id: 2,
+    reservationNumber: "SSMT7R",
+    status: "Checked In",
+    profile: { firstName: "Sarah", lastName: "Smith", email: "sarah.smith@example.com", phone: "+44 20 7946 0958", avatarUrl: "", nationality: "British", countryCode: "GB", passportOrId: "501234567" },
+    booking: { checkIn: "2024-07-16", checkOut: "2024-07-18", roomNumber: "205", roomType: "Standard Queen", numberOfGuests: 1, source: "Direct" },
+    revenue: { totalPaid: 380, roomCharges: 350, serviceCharges: 30, currency: "USD" },
+    orders: [
+      { id: "ORD004", category: "Minibar", item: "1x Water, 1x Nuts", quantity: 2, price: 12, dateOrdered: "2024-07-16T22:00:00", status: "Completed" },
+      { id: "ORD005", category: "Laundry", item: "Express laundry service", quantity: 1, price: 18, dateOrdered: "2024-07-17T09:00:00", status: "Pending" }
+    ],
+    feedback: null,
+    preferences: { specialRequests: "", internalNotes: "" }
+  },
+  {
+    id: 3,
+    reservationNumber: "MJHN9Q",
+    status: "Confirmed",
+    profile: { firstName: "Michael", lastName: "Johnson", email: "michael.j@example.com", phone: "+1 310 555 1212", avatarUrl: "", nationality: "Canadian", countryCode: "CA", passportOrId: "CA1234567" },
+    booking: { checkIn: "2024-07-20", checkOut: "2024-07-28", roomNumber: "310", roomType: "Ocean View Suite", numberOfGuests: 3, source: "Expedia" },
+    revenue: { totalPaid: 0, roomCharges: 800, serviceCharges: 0, currency: "USD" },
+    orders: [],
+    feedback: null,
+    preferences: { specialRequests: "High floor, away from elevator.", internalNotes: "Frequent business traveler." }
+  },
+  {
+    id: 4,
+    reservationNumber: "EBRW3N",
+    status: "Cancelled",
+    profile: { firstName: "Emily", lastName: "Brown", email: "emily.brown@example.com", phone: "+61 2 1234 5678", avatarUrl: "", nationality: "Australian", countryCode: "AU", passportOrId: "E12345678" },
+    booking: { checkIn: "2024-06-17", checkOut: "2024-06-19", roomNumber: "412", roomType: "Standard Twin", numberOfGuests: 2, source: "Direct" },
+    revenue: { totalPaid: 0, roomCharges: 280, serviceCharges: 0, currency: "USD" },
+    orders: [],
+    feedback: null,
+    preferences: { specialRequests: "Hypoallergenic pillows.", internalNotes: "" }
+  },
+  {
+    id: 5,
+    reservationNumber: "DWLS8M",
+    status: "Confirmed",
+    profile: { firstName: "David", lastName: "Wilson", email: "david.wilson@example.com", phone: "+49 30 1234567", avatarUrl: "", nationality: "German", countryCode: "DE", passportOrId: "D12345678" },
+    booking: { checkIn: "2024-08-01", checkOut: "2024-08-10", roomNumber: "508", roomType: "Family Suite", numberOfGuests: 4, source: "Booking.com" },
+    revenue: { totalPaid: 1350, roomCharges: 1200, serviceCharges: 150, currency: "USD" },
+    orders: [
+      { id: "ORD006", category: "Transportation", item: "Airport transfer - Round trip", quantity: 1, price: 80, dateOrdered: "2024-07-25T10:00:00", status: "Completed" },
+      { id: "ORD007", category: "Car Wash", item: "Full service car wash", quantity: 1, price: 35, dateOrdered: "2024-08-02T15:00:00", status: "Completed" },
+      { id: "ORD008", category: "Spa", item: "Family spa package", quantity: 1, price: 35, dateOrdered: "2024-08-03T11:00:00", status: "Completed", notes: "All family members" }
+    ],
+    feedback: { rating: 4, comment: "Great family experience. Kids loved the pool. Only issue was some noise from neighboring room.", date: "2024-08-11" },
+    preferences: { specialRequests: "Baby crib, connecting rooms.", internalNotes: "Returning family." }
+  },
 ]
-
-// --- HELPER COMPONENTS ---
 
 const StatusBadge = ({ status }: { status: Guest["status"] }) => {
   const variant = {
@@ -121,7 +221,15 @@ const StatusBadge = ({ status }: { status: Guest["status"] }) => {
   return <Badge variant={variant}>{status}</Badge>
 }
 
-// --- MAIN PAGE COMPONENT ---
+const DetailItem = ({ icon, label, value }: { icon: React.ElementType, label: string, value: React.ReactNode }) => (
+  <div className="flex items-start gap-3">
+    <div className="flex-shrink-0 text-muted-foreground">{React.createElement(icon, { className: "size-5" })}</div>
+    <div>
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="font-medium">{value}</p>
+    </div>
+  </div>
+)
 
 export default function GuestsPage() {
   const [data] = React.useState(() => [...guestData])
@@ -141,47 +249,42 @@ export default function GuestsPage() {
   const columns: ColumnDef<Guest>[] = [
     { id: "select", header: ({ table }) => <Checkbox checked={table.getIsAllPageRowsSelected()} onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)} aria-label="Select all" />, cell: ({ row }) => <Checkbox checked={row.getIsSelected()} onCheckedChange={(value) => row.toggleSelected(!!value)} aria-label="Select row" />, enableSorting: false, enableHiding: false },
     {
-      accessorKey: "firstName",
-      header: "Guest",
+      accessorKey: "profile",
+      header: "Guest Name",
       cell: ({ row }) => {
-        const guest = row.original
-        const fallback = `${guest.firstName[0] ?? ""}${guest.lastName[0] ?? ""}`
+        const { firstName, lastName, email, avatarUrl } = row.original.profile
+        const fallback = `${firstName[0] ?? ""}${lastName[0] ?? ""}`
         return (
           <div className="flex items-center gap-3">
-            <Avatar className="size-10 border">
-              <AvatarImage src={guest.avatarUrl} alt={`${guest.firstName} ${guest.lastName}`} />
+            <Avatar className="size-8 border">
+              <AvatarImage src={avatarUrl} alt={`${firstName} ${lastName}`} />
               <AvatarFallback>{fallback}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
-              <div className="font-medium truncate">{guest.firstName} {guest.lastName}</div>
-              <div className="text-sm text-muted-foreground truncate">{guest.email}</div>
+              <div className="font-medium truncate">{firstName} {lastName}</div>
+              <div className="text-sm text-muted-foreground truncate">{email}</div>
             </div>
           </div>
         )
       },
     },
+    { accessorKey: "reservationNumber", header: "Reservation" },
+    { accessorKey: "booking.roomNumber", header: "Room Number" },
     { accessorKey: "status", header: "Status", cell: ({ row }) => <StatusBadge status={row.getValue("status")} /> },
-    { accessorKey: "roomNum", header: "Room" },
     {
-      accessorKey: "checkIn",
-      header: "Stay Dates",
+      accessorKey: "booking.checkIn",
+      header: "Check-in / Check-out",
       cell: ({ row }) => (
         <div>
-          <div>{row.original.checkIn}</div>
-          <div className="text-muted-foreground">{row.original.checkOut}</div>
+          <div className="font-medium">{format(new Date(row.original.booking.checkIn), "LLL dd, yyyy")}</div>
+          <div className="text-sm text-muted-foreground">{format(new Date(row.original.booking.checkOut), "LLL dd, yyyy")}</div>
         </div>
       ),
     },
-    { accessorKey: "amount", header: () => <div className="text-right">Amount</div>, cell: ({ row }) => <div className="text-right font-medium">${row.getValue("amount")}</div> },
     {
-      accessorKey: "paid",
-      header: "Payment",
-      cell: ({ row }) => (
-        <div className="flex items-center gap-2">
-          {row.getValue("paid") ? <IconCircleCheck className="size-5 text-green-500" /> : <IconCircleX className="size-5 text-destructive" />}
-          {row.getValue("paid") ? "Paid" : "Unpaid"}
-        </div>
-      ),
+      accessorKey: "revenue.totalPaid",
+      header: () => <div className="text-right">Revenue</div>,
+      cell: ({ row }) => <div className="text-right font-medium">${row.original.revenue.totalPaid}</div>
     },
     {
       id: "actions",
@@ -247,7 +350,7 @@ export default function GuestsPage() {
                 <div className="flex items-center justify-between gap-4 p-4">
                   <div className="relative">
                     <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
-                    <Input placeholder="Search by name, email..." value={(table.getColumn("firstName")?.getFilterValue() as string) ?? ""} onChange={(event) => table.getColumn("firstName")?.setFilterValue(event.target.value)} className="w-full pl-10 md:w-[250px] lg:w-[300px]" />
+                    <Input placeholder="Search by name, email..." value={(table.getColumn("profile")?.getFilterValue() as string) ?? ""} onChange={(event) => table.getColumn("profile")?.setFilterValue(event.target.value)} className="w-full pl-10 md:w-[250px] lg:w-[300px]" />
                   </div>
                   <div className="flex items-center gap-2">
                     <DropdownMenu>
@@ -262,7 +365,7 @@ export default function GuestsPage() {
                         <DropdownMenuSeparator />
                         {table.getAllColumns().filter((column) => column.getCanHide()).map((column) => (
                           <DropdownMenuCheckboxItem key={column.id} className="capitalize" checked={column.getIsVisible()} onCheckedChange={(value) => column.toggleVisibility(!!value)}>
-                            {column.id}
+                            {column.id.includes('.') ? column.id.split('.')[1] : column.id}
                           </DropdownMenuCheckboxItem>
                         ))}
                       </DropdownMenuContent>
@@ -317,73 +420,150 @@ export default function GuestsPage() {
         </SidebarInset>
 
         <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-          <SheetContent className="sm:max-w-2xl flex flex-col p-0">
+          <SheetContent className="sm:max-w-3xl flex flex-col p-0">
             {selectedGuest && (
               <>
-                <SheetHeader className="p-6 space-y-2">
+                <SheetHeader className="p-6">
                   <div className="flex items-center justify-between">
-                    <SheetTitle className="text-2xl">Reservation #{selectedGuest.uniqueId}</SheetTitle>
+                    <SheetTitle className="text-2xl font-semibold">Reservation #{selectedGuest.reservationNumber}</SheetTitle>
                     <StatusBadge status={selectedGuest.status} />
                   </div>
                   <SheetDescription>
-                    Details for the reservation of {selectedGuest.firstName} {selectedGuest.lastName}.
+                    Details for {selectedGuest.profile.firstName} {selectedGuest.profile.lastName}'s booking.
                   </SheetDescription>
                 </SheetHeader>
                 <Separator />
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                   <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
+                    <CardHeader className="flex flex-row items-start justify-between">
                       <div className="flex items-center gap-4">
-                        <Avatar className="size-14 border">
-                          <AvatarImage src={selectedGuest.avatarUrl} />
-                          <AvatarFallback>{selectedGuest.firstName[0]}{selectedGuest.lastName[0]}</AvatarFallback>
+                        <Avatar className="size-12 border">
+                          <AvatarImage src={selectedGuest.profile.avatarUrl} />
+                          <AvatarFallback>{selectedGuest.profile.firstName[0]}{selectedGuest.profile.lastName[0]}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <CardTitle>{selectedGuest.firstName} {selectedGuest.lastName}</CardTitle>
-                          <p className="text-muted-foreground">{selectedGuest.email}</p>
+                          <CardTitle className="text-xl">
+                            {selectedGuest.profile.firstName} {selectedGuest.profile.lastName}
+                          </CardTitle>
+                          <p className="text-muted-foreground">{selectedGuest.profile.email}</p>
                         </div>
                       </div>
                       <Button variant="outline" size="icon"><IconEdit className="size-4" /></Button>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center gap-4"><IconPhone className="size-5 text-muted-foreground" /><p>{selectedGuest.phone}</p></div>
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 pt-6">
+                      <DetailItem icon={IconPhone} label="Phone" value={selectedGuest.profile.phone} />
+                      <DetailItem icon={IconFlag} label="Nationality" value={selectedGuest.profile.nationality} />
+                      <DetailItem icon={IconId} label="Passport/ID" value={selectedGuest.profile.passportOrId} />
                     </CardContent>
                   </Card>
 
                   <Card>
-                    <CardHeader><CardTitle>Booking Details</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1"><p className="text-sm text-muted-foreground">Check-in</p><p className="font-medium">{selectedGuest.checkIn}</p></div>
-                        <div className="space-y-1"><p className="text-sm text-muted-foreground">Check-out</p><p className="font-medium">{selectedGuest.checkOut}</p></div>
-                        <div className="space-y-1"><p className="text-sm text-muted-foreground">Room No.</p><p className="font-medium">{selectedGuest.roomNum}</p></div>
-                        <div className="space-y-1"><p className="text-sm text-muted-foreground">Guests</p><p className="font-medium">{selectedGuest.guests}</p></div>
-                      </div>
+                    <CardHeader><CardTitle className="flex items-center gap-2"><IconBook className="size-5 text-muted-foreground" /> Booking Details</CardTitle></CardHeader>
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                      <DetailItem icon={IconCalendar} label="Check-in" value={format(new Date(selectedGuest.booking.checkIn), "E, LLL dd, yyyy")} />
+                      <DetailItem icon={IconCalendar} label="Check-out" value={format(new Date(selectedGuest.booking.checkOut), "E, LLL dd, yyyy")} />
+                      <DetailItem icon={IconBed} label="Room" value={`${selectedGuest.booking.roomNumber} (${selectedGuest.booking.roomType})`} />
+                      <DetailItem icon={IconUsers} label="Guests" value={selectedGuest.booking.numberOfGuests} />
+                      <DetailItem icon={IconBriefcase} label="Source" value={selectedGuest.booking.source} />
                     </CardContent>
                   </Card>
 
                   <Card>
-                    <CardHeader><CardTitle>Billing</CardTitle></CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-start justify-between">
+                    <CardHeader><CardTitle className="flex items-center gap-2"><IconCash className="size-5 text-muted-foreground" /> Revenue</CardTitle></CardHeader>
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 text-muted-foreground"><IconCreditCard className="size-5" /></div>
                         <div>
-                          <p className="text-sm text-muted-foreground">Total Amount</p>
-                          <p className="text-2xl font-bold">${selectedGuest.amount.toFixed(2)}</p>
+                          <p className="text-sm text-muted-foreground">Total Paid</p>
+                          <p className="font-bold text-lg">{new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedGuest.revenue.currency }).format(selectedGuest.revenue.totalPaid)}</p>
                         </div>
-                        <Badge variant={selectedGuest.paid ? "default" : "destructive"} className="gap-1.5">
-                          {selectedGuest.paid ? <IconCircleCheck className="size-4" /> : <IconCircleX className="size-4" />}
-                          {selectedGuest.paid ? "Paid" : "Unpaid"}
-                        </Badge>
                       </div>
-                      {!selectedGuest.paid && <Button className="w-full">Mark as Paid</Button>}
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 text-muted-foreground"><IconBed className="size-5" /></div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Room Charges</p>
+                          <p className="font-medium">{new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedGuest.revenue.currency }).format(selectedGuest.revenue.roomCharges)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 text-muted-foreground"><IconCash className="size-5" /></div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Service Charges</p>
+                          <p className="font-medium">{new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedGuest.revenue.currency }).format(selectedGuest.revenue.serviceCharges)}</p>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
 
-                  {selectedGuest.specialRequests && selectedGuest.specialRequests !== "None." && (
+                  {selectedGuest.orders.length > 0 && (
                     <Card>
-                      <CardHeader><CardTitle>Special Requests</CardTitle></CardHeader>
+                      <CardHeader><CardTitle className="flex items-center gap-2"><IconShoppingCart className="size-5 text-muted-foreground" /> Orders & Services</CardTitle></CardHeader>
                       <CardContent>
-                        <p className="text-muted-foreground">{selectedGuest.specialRequests}</p>
+                        <div className="space-y-4">
+                          {selectedGuest.orders.map((order) => (
+                            <div key={order.id} className="flex items-start justify-between pb-4 border-b last:border-0 last:pb-0">
+                              <div className="flex items-start gap-3 flex-1">
+                                <div className="flex-shrink-0 text-muted-foreground">
+                                  {order.category === "Minibar" && <IconShoppingCart className="size-5" />}
+                                  {order.category === "Transportation" && <IconCar className="size-5" />}
+                                  {order.category === "Flowers" && <IconFlower className="size-5" />}
+                                  {order.category === "Car Wash" && <IconCar className="size-5" />}
+                                  {(order.category === "Room Service" || order.category === "Spa" || order.category === "Laundry" || order.category === "Other") && <IconNotes className="size-5" />}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <p className="font-medium">{order.item}</p>
+                                    <Badge variant={order.status === "Completed" ? "secondary" : order.status === "Pending" ? "outline" : "destructive"} className="text-xs">{order.status}</Badge>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground">{order.category} • Qty: {order.quantity}</p>
+                                  {order.notes && <p className="text-sm text-muted-foreground mt-1">{order.notes}</p>}
+                                  <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><IconClock className="size-3" /> {format(new Date(order.dateOrdered), "LLL dd, yyyy 'at' h:mm a")}</p>
+                                </div>
+                              </div>
+                              <div className="font-semibold text-right ml-4">${order.price}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {selectedGuest.feedback && (
+                    <Card>
+                      <CardHeader><CardTitle className="flex items-center gap-2"><IconStar className="size-5 text-muted-foreground" /> Guest Feedback</CardTitle></CardHeader>
+                      <CardContent>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                star <= selectedGuest.feedback!.rating ?
+                                  <IconStarFilled key={star} className="size-5 text-yellow-500" /> :
+                                  <IconStar key={star} className="size-5 text-gray-300" />
+                              ))}
+                            </div>
+                            <span className="font-semibold text-lg">{selectedGuest.feedback.rating}/5</span>
+                          </div>
+                          <p className="text-muted-foreground">{selectedGuest.feedback.comment}</p>
+                          <p className="text-xs text-muted-foreground">Submitted on {format(new Date(selectedGuest.feedback.date), "LLLL dd, yyyy")}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {(selectedGuest.preferences.specialRequests && selectedGuest.preferences.specialRequests !== "None.") && (
+                    <Card>
+                      <CardHeader><CardTitle className="flex items-center gap-2"><IconStar className="size-5 text-muted-foreground" /> Special Requests</CardTitle></CardHeader>
+                      <CardContent>
+                        <p className="text-muted-foreground">{selectedGuest.preferences.specialRequests}</p>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {selectedGuest.preferences.internalNotes && (
+                     <Card>
+                      <CardHeader><CardTitle className="flex items-center gap-2"><IconNotes className="size-5 text-muted-foreground" /> Internal Notes</CardTitle></CardHeader>
+                      <CardContent>
+                        <p className="text-muted-foreground">{selectedGuest.preferences.internalNotes}</p>
                       </CardContent>
                     </Card>
                   )}
