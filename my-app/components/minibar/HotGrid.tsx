@@ -28,7 +28,7 @@ export default function HotGrid() {
 
   return (
     <section className="rounded-lg border p-4 shadow-sm bg-white">
-      <h2 className="text-lg font-semibold mb-3">Hot Items</h2>
+      <h2 className="text-lg font-semibold mb-3">Listed Items</h2>
 
       {}
       <div>
