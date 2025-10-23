@@ -131,7 +131,7 @@ const data = {
     },
     {
       title: "Mini Bar",
-      url: "#",
+      url: "/Minibar",
       icon: IconGlass,
       items: [
         {
