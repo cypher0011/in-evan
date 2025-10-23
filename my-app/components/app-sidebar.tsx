@@ -62,6 +62,25 @@ const data = {
       icon: IconUsers
     },
     {
+      title: "Mini Bar",
+      url: "/Minibar",
+      icon: IconGlass,
+      items: [
+        {
+          title: "Add New Item",
+          url: "#",
+        },
+        {
+          title: "Edit",
+          url: "#",
+        },
+        {
+          title: "Upload Picture",
+          url: "#",
+        },
+      ],
+    },
+    {
       title: "Style",
       url: "#",
       icon: IconPalette,
@@ -81,7 +100,7 @@ const data = {
       ],
     },
     {
-      title: "Reservations",
+      title: "guest app",
       url: "#",
       icon: IconCalendar,
       items: [
@@ -125,25 +144,6 @@ const data = {
         },
         {
           title: "Dining in the Room",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Mini Bar",
-      url: "/Minibar",
-      icon: IconGlass,
-      items: [
-        {
-          title: "Add New Item",
-          url: "#",
-        },
-        {
-          title: "Edit",
-          url: "#",
-        },
-        {
-          title: "Upload Picture",
           url: "#",
         },
       ],
