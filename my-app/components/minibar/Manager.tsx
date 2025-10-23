@@ -1,11 +1,9 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  loadItems,
-  saveItems,
-  type MiniItem,
-} from "./storage";
+import { loadItems, saveItems, type MiniItem } from "./storage";
+import ItemDetailsSheet from "@/components/minibar/ItemDetailsSheet";
+
 
 
 async function fileToSmallDataUrl(file: File, maxSide = 256): Promise<string> {
@@ -37,21 +35,18 @@ async function fileToSmallDataUrl(file: File, maxSide = 256): Promise<string> {
 }
 
 export default function MiniBarManager() {
-
   const [items, setItems] = useState<MiniItem[]>(() =>
     typeof window === "undefined" ? [] : loadItems()
   );
-
-
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => setHydrated(true), []);
-
-
   const [name, setName] = useState("");
   const [price, setPrice] = useState<string>("");
+  const [description, setDescription] = useState(""); // 🆕 description field
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | undefined>();
 
+  const [selectedItem, setSelectedItem] = useState<MiniItem | null>(null); // 🆕 for the slide panel
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -77,19 +72,20 @@ export default function MiniBarManager() {
       name: name.trim(),
       priceSar: Number(price || 0),
       imageDataUrl,
+      description: description.trim() || "", // 🆕 added description
       hot: false,
       createdAt: new Date().toISOString(),
     };
 
     setItems((old) => {
       const next = [newItem, ...old];
-      // save immediately too (belt & suspenders)
       saveItems(next);
       return next;
     });
 
     setName("");
     setPrice("");
+    setDescription("");
     setFile(null);
     setPreview(undefined);
   }
@@ -143,14 +139,49 @@ export default function MiniBarManager() {
             />
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label className="text-sm">Image (optional)</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+          <div className="flex flex-col gap-1 md:col-span-3">
+            <label className="text-sm">Description</label>
+            <textarea
+              className="border rounded px-3 py-2 resize-none"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe the item..."
             />
           </div>
+
+          <div className="flex flex-col gap-2">
+  <div className="flex flex-col gap-1">
+  <label className="text-sm font-medium text-gray-700"></label>
+
+  <div className="flex items-center gap-5">
+    {/* Hidden native input */}
+    <input
+      id="image-upload"
+      type="file"
+      accept="image/*"
+      onChange={(e) => onPick(e.target.files?.[0] ?? null)}
+      className="hidden"
+    />
+
+    {/* Small, aligned button */}
+    <label
+  htmlFor="image-upload"
+  className="cursor-pointer rounded-md bg-blue-600 px-4 py-2 text- font-bold text-white shadow-sm hover:bg-blue-700 focus:ring-2 focus:ring-blue-400 transition"
+>
+  ➕ Choose Image
+</label>
+
+
+    {/* Display selected file name */}
+    {file && (
+      <span className="text-xs text-gray-600 truncate max-w-[160px]">
+        {file.name}
+      </span>
+    )}
+  </div>
+</div>
+</div>
+
 
           {preview && (
             <div className="md:col-span-3">
@@ -174,6 +205,7 @@ export default function MiniBarManager() {
               onClick={() => {
                 setName("");
                 setPrice("");
+                setDescription("");
                 setFile(null);
                 setPreview(undefined);
               }}
@@ -203,11 +235,8 @@ export default function MiniBarManager() {
                 <th className="py-2">Actions</th>
               </tr>
             </thead>
-
-            {/* 🔒 Hydration-safe tbody */}
             <tbody>
               {!hydrated ? (
-                // Keep SSR/CSR markup identical until client mounts
                 <tr>
                   <td className="py-6 text-gray-400" colSpan={5}>
                     Loading…
@@ -221,7 +250,11 @@ export default function MiniBarManager() {
                 </tr>
               ) : (
                 items.map((i) => (
-                  <tr key={i.id} className="border-t">
+                  <tr
+                    key={i.id}
+                    className="border-t cursor-pointer hover:bg-gray-50 transition"
+                    onClick={() => setSelectedItem(i)} // 🆕 click to open details
+                  >
                     <td className="py-2 pr-3">
                       {i.imageDataUrl ? (
                         <img
@@ -238,18 +271,25 @@ export default function MiniBarManager() {
                     <td className="py-2 pr-3">
                       SAR {Number(i.priceSar).toFixed(2)}
                     </td>
+                    
                     <td className="py-2 pr-3">
                       {i.hot ? (
                         <button
-                          onClick={() => toggleHot(i.id)}
-                          className="bg-red-600 text-black text-xs font-semibold px-4 py-1.5 rounded-md shadow-md border border-red-700 hover:bg-red-700 active:scale-95 transition"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleHot(i.id);
+                          }}
+                          className="bg-red-600 text-black text-xs font-semibold px-4 py-1.5 rounded-md shadow-md hover:bg-red-700 transition"
                         >
                           Remove
                         </button>
                       ) : (
                         <button
-                          onClick={() => toggleHot(i.id)}
-                          className="bg-rose-500 text-red text-xs font-semibold px-4 py-1.5 rounded-md shadow-md border border-rose-600 hover:bg-rose-600 active:scale-95 transition"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleHot(i.id);
+                          }}
+                          className="bg-rose-500 text-black text-xs font-semibold px-4 py-1.5 rounded-md shadow-md hover:bg-rose-600 transition"
                         >
                           HOT 🔥
                         </button>
@@ -257,11 +297,15 @@ export default function MiniBarManager() {
                     </td>
                     <td className="py-2">
                       <button
-                        onClick={() => remove(i.id)}
-                        className="bg-rose-500 text-red text-xs font-semibold px-4 py-1.5 rounded-md shadow-md border border-rose-600 hover:bg-rose-600 active:scale-95 transition"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          remove(i.id);
+                        }}
+                        className="bg-gray-100 text-red-600 text-xs font-semibold px-4 py-1.5 rounded-md hover:bg-gray-200 transition"
                       >
                         Delete
                       </button>
+                      
                     </td>
                   </tr>
                 ))
@@ -270,6 +314,13 @@ export default function MiniBarManager() {
           </table>
         </div>
       </div>
+
+      {/* 🪟 Slide-over sheet */}
+      <ItemDetailsSheet
+        item={selectedItem}
+        open={!!selectedItem}
+        onClose={() => setSelectedItem(null)}
+      />
     </div>
   );
 }

@@ -1,11 +1,13 @@
-export type MiniItem = {
+export interface MiniItem {
   id: string;
   name: string;
   priceSar: number;
   imageDataUrl?: string;
   hot: boolean;
+  description?: string; // 🆕
   createdAt: string;
-};
+}
+
 
 const KEY = "minibar-items";
 export const MINIBAR_UPDATE_EVENT = "minibar:items-updated";
