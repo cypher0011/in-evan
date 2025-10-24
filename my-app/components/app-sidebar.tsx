@@ -63,6 +63,11 @@ const data = {
       icon: IconUsers
     },
     {
+      title: "check-in",
+      url: "/guests",
+      icon: IconUsers
+    },
+    {
       title: "Mini Bar",
       url: "/Minibar",
       icon: IconGlass,
