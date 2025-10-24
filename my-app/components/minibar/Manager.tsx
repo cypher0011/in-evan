@@ -361,7 +361,7 @@ export default function MiniBarManager() {
     {
       accessorKey: "price",
       header: "Price",
-      cell: ({ row }) => <div className="font-medium">${row.original.price}</div>,
+      cell: ({ row }) => <div className="font-medium"><span className="icon-saudi_riyal"></span>{row.original.price}</div>,
     },
     {
       accessorKey: "stockQuantity",
@@ -629,7 +629,7 @@ export default function MiniBarManager() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="price">Price ($) *</Label>
+                <Label htmlFor="price">Price (Riyal) *</Label>
                 <Input
                   id="price"
                   type="number"

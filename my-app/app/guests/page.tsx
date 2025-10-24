@@ -284,7 +284,7 @@ export default function GuestsPage() {
     {
       accessorKey: "revenue.totalPaid",
       header: () => <div className="text-right">Revenue</div>,
-      cell: ({ row }) => <div className="text-right font-medium">${row.original.revenue.totalPaid}</div>
+      cell: ({ row }) => <div className="text-right font-medium"><span className="icon-saudi_riyal"></span>{row.original.revenue.totalPaid}</div>
     },
     {
       id: "actions",
@@ -475,21 +475,21 @@ export default function GuestsPage() {
                         <div className="flex-shrink-0 text-muted-foreground"><IconCreditCard className="size-5" /></div>
                         <div>
                           <p className="text-sm text-muted-foreground">Total Paid</p>
-                          <p className="font-bold text-lg">{new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedGuest.revenue.currency }).format(selectedGuest.revenue.totalPaid)}</p>
+                          <p className="font-bold text-lg"><span className="icon-saudi_riyal"></span>{selectedGuest.revenue.totalPaid.toLocaleString()}</p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
                         <div className="flex-shrink-0 text-muted-foreground"><IconBed className="size-5" /></div>
                         <div>
                           <p className="text-sm text-muted-foreground">Room Charges</p>
-                          <p className="font-medium">{new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedGuest.revenue.currency }).format(selectedGuest.revenue.roomCharges)}</p>
+                          <p className="font-bold"><span className="icon-saudi_riyal"></span>{selectedGuest.revenue.roomCharges.toLocaleString()}</p>
                         </div>
                       </div>
                       <div className="flex items-start gap-3">
                         <div className="flex-shrink-0 text-muted-foreground"><IconCash className="size-5" /></div>
                         <div>
                           <p className="text-sm text-muted-foreground">Service Charges</p>
-                          <p className="font-medium">{new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedGuest.revenue.currency }).format(selectedGuest.revenue.serviceCharges)}</p>
+                          <p className="font-bold"><span className="icon-saudi_riyal"></span>{selectedGuest.revenue.serviceCharges.toLocaleString()}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -520,7 +520,7 @@ export default function GuestsPage() {
                                   <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1"><IconClock className="size-3" /> {format(new Date(order.dateOrdered), "LLL dd, yyyy 'at' h:mm a")}</p>
                                 </div>
                               </div>
-                              <div className="font-semibold text-right ml-4">${order.price}</div>
+                              <div className="font-semibold text-right ml-4"><span className="icon-saudi_riyal"></span>{order.price}</div>
                             </div>
                           ))}
                         </div>

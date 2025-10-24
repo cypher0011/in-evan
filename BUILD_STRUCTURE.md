@@ -33,6 +33,7 @@
 
 # Fun add-on
 - remix
+- date-fns
 
 # Ui components
 - shadcn

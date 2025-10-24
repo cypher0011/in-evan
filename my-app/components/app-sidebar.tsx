@@ -10,6 +10,7 @@ import {
   IconFileDescription,
   IconFileWord,
   IconFolder,
+  IconCloudDataConnectionFilled,
   IconHelp,
   IconInnerShadowTop,
   IconListDetails,
@@ -92,27 +93,8 @@ const data = {
       ],
     },
     {
-      title: "Style",
-      url: "#",
-      icon: IconPalette,
-      items: [
-        {
-          title: "Guest",
-          url: "#",
-        },
-        {
-          title: "Mini-Bar",
-          url: "#",
-        },
-        {
-          title: "Checkin",
-          url: "#",
-        },
-      ],
-    },
-    {
       title: "guest app",
-      url: "#",
+      url: "/guest-app",
       icon: IconCalendar,
       items: [
         {
@@ -121,29 +103,68 @@ const data = {
         },
       ],
     },
-    {
-      title: "Payments",
-      url: "#",
-      icon: IconCreditCard,
-      items: [
+    // finish later 
+    // {
+    //   title: "Style",
+    //   url: "#",
+    //   icon: IconPalette,
+    //   items: [
+    //     {
+    //       title: "Guest",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Mini-Bar",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Checkin",
+    //       url: "#",
+    //     },
+    //   ],
+    // },
+    // {
+    //   title: "Payments",
+    //   url: "#",
+    //   icon: IconCreditCard,
+    //   items: [
+    //     {
+    //       title: "Cash",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Visa",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Apple Pay",
+    //       url: "#",
+    //     },
+    //   ],
+    // },
+    // {
+    //   title: "Operation",
+    //   url: "#",
+    //   icon: IconTool,
+    //   items: [
+    //     {
+    //       title: "Cleaning Room",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Mini Bar Stuff",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Dining in the Room",
+    //       url: "#",
+    //     },
+    //   ],
+    // },
         {
-          title: "Cash",
-          url: "#",
-        },
-        {
-          title: "Visa",
-          url: "#",
-        },
-        {
-          title: "Apple Pay",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Operation",
-      url: "#",
-      icon: IconTool,
+      title: "Analysis",
+      url: "/analysis",
+      icon: IconCloudDataConnectionFilled,
       items: [
         {
           title: "Cleaning Room",
@@ -210,31 +231,9 @@ const data = {
   ],
   navSecondary: [
     {
-      title: "Get Help",
-      url: "#",
-      icon: IconHelp,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: IconSearch,
-    },
-    {
       title: "Settings",
       url: "#",
       icon: IconSettings,
-    },
-  ],
-  documents: [
-    {
-      name: "Data Library",
-      url: "#",
-      icon: IconDatabase,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: IconReport,
     },
   ],
 }
@@ -259,7 +258,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
