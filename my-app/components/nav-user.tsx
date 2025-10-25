@@ -28,6 +28,9 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useRouter } from "next/navigation"
+import { toast } from "sonner"
+import { createClient } from "@/lib/supabase/client"
 
 export function NavUser({
   user,
@@ -39,6 +42,27 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
+  const router = useRouter()
+  const supabase = createClient()
+
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
+
+      if (error) {
+        toast.error("Logout failed", {
+          description: error.message,
+        })
+        return
+      }
+
+      toast.success("Logged out successfully")
+      router.push("/admin/login")
+      router.refresh()
+    } catch (error) {
+      toast.error("An error occurred during logout")
+    }
+  }
 
   return (
     <SidebarMenu>
@@ -94,7 +118,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <IconLogout />
               Log out
             </DropdownMenuItem>

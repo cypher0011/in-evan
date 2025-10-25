@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { createServerClient } from '@supabase/ssr'
 
-// 1. الدالة الأساسية: يجب أن يكون اسمها "middleware"
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const host = request.headers.get('host') || '';
 
@@ -19,27 +19,86 @@ export function middleware(request: NextRequest) {
     path.startsWith('/_next') ||
     path.startsWith('/api') ||
     path.startsWith('/static') ||
-    path.includes('.') ||
-    path.startsWith('/admin') || // Don't rewrite if already in admin path
-    path.startsWith('/main')     // Don't rewrite if already in main path
+    path.includes('.')
   ) {
     return NextResponse.next();
   }
 
-  // 1. توجيه لوحة التحكم (Admin subdomain)
+  // Don't rewrite if already in admin or main path
+  const isAlreadyRewritten = path.startsWith('/admin') || path.startsWith('/main');
+
+  let response = NextResponse.next();
+
+  // Handle admin subdomain routing
   if (host === adminDomain || host === `admin.in-evan.com${port}`) {
-    url.pathname = `/admin${path}`;
-    return NextResponse.rewrite(url);
+    // Create Supabase client for authentication check
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options)
+            })
+          },
+        },
+      }
+    )
+
+    // Check authentication
+    const { data: { session } } = await supabase.auth.getSession()
+
+    // If not authenticated and not on login page, redirect to login
+    if (!session && !path.startsWith('/admin/login') && !isAlreadyRewritten) {
+      const loginUrl = url.clone()
+      loginUrl.pathname = '/admin/login'
+      return NextResponse.redirect(loginUrl)
+    }
+
+    // If authenticated and on login page, redirect to dashboard
+    if (session && path === '/admin/login') {
+      const dashboardUrl = url.clone()
+      dashboardUrl.pathname = '/admin/dashboard'
+      return NextResponse.redirect(dashboardUrl)
+    }
+
+    // If authenticated and on root admin page, redirect to dashboard
+    if (session && (path === '/' || path === '/admin')) {
+      const dashboardUrl = url.clone()
+      dashboardUrl.pathname = '/admin/dashboard'
+      return NextResponse.redirect(dashboardUrl)
+    }
+
+    // If not authenticated and on root, redirect to login
+    if (!session && (path === '/' || path === '/admin')) {
+      const loginUrl = url.clone()
+      loginUrl.pathname = '/admin/login'
+      return NextResponse.redirect(loginUrl)
+    }
+
+    // Rewrite to /admin path if not already
+    if (!isAlreadyRewritten) {
+      url.pathname = `/admin${path}`;
+      response = NextResponse.rewrite(url);
+    }
+
+    return response;
   }
 
-  // 2. توجيه الموقع الرئيسي (Main domain or localhost)
+  // Handle main domain routing
   if (
     host === mainDomain ||
     host === `in-evan.com${port}` ||
     host.startsWith('localhost')
   ) {
-    url.pathname = `/main${path}`;
-    return NextResponse.rewrite(url);
+    if (!isAlreadyRewritten) {
+      url.pathname = `/main${path}`;
+      return NextResponse.rewrite(url);
+    }
   }
 
   return NextResponse.next();

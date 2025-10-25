@@ -39,13 +39,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { createClient } from "@/lib/supabase/client"
 
 const data = {
-  user: {
-    name: "movenpick",
-    email: "movenpick@in-evan.com",
-    avatar: "/avatars/movenpick.png",
-  },
   navMain: [
     {
       title: "Dashboard",
@@ -244,6 +240,47 @@ const data = {
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [user, setUser] = React.useState({
+    name: "Loading...",
+    email: "Loading...",
+    avatar: "/avatars/movenpick.png",
+  })
+  const supabase = createClient()
+
+  React.useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+
+      if (authUser) {
+        // Extract name from email (e.g., "movenpick@in-evan.com" -> "movenpick")
+        const name = authUser.email?.split('@')[0] || "Guest"
+        setUser({
+          name: name.charAt(0).toUpperCase() + name.slice(1),
+          email: authUser.email || "",
+          avatar: authUser.user_metadata?.avatar_url || "/avatars/movenpick.png",
+        })
+      }
+    }
+
+    fetchUser()
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const name = session.user.email?.split('@')[0] || "Guest"
+        setUser({
+          name: name.charAt(0).toUpperCase() + name.slice(1),
+          email: session.user.email || "",
+          avatar: session.user.user_metadata?.avatar_url || "/avatars/movenpick.png",
+        })
+      }
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase])
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -266,7 +303,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   )
