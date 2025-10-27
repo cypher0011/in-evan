@@ -50,7 +50,7 @@ const data = {
     },
     // {
     //   title: "Add New Guest",
-    //   url: "#",
+    //   url: "/guests/",
     //   icon: IconUserPlus,
     // },
     {
@@ -82,6 +82,13 @@ const data = {
         },
       ],
     },
+   {
+  title: "Order Details",
+  url: "/order-details",
+  icon: IconDatabase
+},
+
+
     {
       title: "feedback",
       url: "/feedback",

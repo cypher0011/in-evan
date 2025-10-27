@@ -1,0 +1,685 @@
+"use client";
+
+import * as React from "react";
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase/supabase";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+
+import {
+  IconCheck,
+  IconShoppingCart,
+  IconCircleX,
+  IconAlertTriangle,
+  IconSearch,
+} from "@tabler/icons-react";
+
+/* ------------------------------------------------------------------ */
+/* Types + Local minibar storage helpers                               */
+/* ------------------------------------------------------------------ */
+
+type Category =
+  | "Beverage"
+  | "Snack"
+  | "Dessert"
+  | "Water"
+  | "Alcohol"
+  | "Main Course"
+  | "Breakfast"
+  | "Other";
+
+export interface MiniItem {
+  id: string;
+  name: string;
+  category: Category;
+  customCategory?: string;
+  price: number;
+  imageUrl?: string;
+  allergicDetails?: string;
+  calories?: number;
+  stockQuantity: number;
+  description?: string;
+  isVisible: boolean;
+  createdAt: string;
+}
+
+const KEY = "minibar-items";
+const MINIBAR_UPDATE_EVENT = "minibar:items-updated";
+
+function loadItems(): MiniItem[] {
+  try {
+    return JSON.parse(localStorage.getItem(KEY) || "[]") as MiniItem[];
+  } catch {
+    return [];
+  }
+}
+
+function saveItems(items: MiniItem[]) {
+  localStorage.setItem(KEY, JSON.stringify(items));
+  const fire = () => {
+    try {
+      window.dispatchEvent(new CustomEvent(MINIBAR_UPDATE_EVENT));
+    } catch {}
+  };
+  if (typeof queueMicrotask === "function") queueMicrotask(fire);
+  else setTimeout(fire, 0);
+}
+
+/* ------------------------------------------------------------------ */
+/* Page                                                                */
+/* ------------------------------------------------------------------ */
+
+type FoundGuest = {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  room_number: string;
+  status: string;
+};
+
+type CartLine = {
+  itemId: string;
+  name: string;
+  price: number;
+  quantity: number;
+};
+
+export default function GuestOrderPage() {
+  // flow state: order -> done
+  const [step, setStep] = useState<"order" | "done">("order");
+
+  // cart + menu
+  const [menu, setMenu] = useState<MiniItem[]>([]);
+  const [cart, setCart] = useState<CartLine[]>([]);
+  const [notes, setNotes] = useState("");
+  const [placing, setPlacing] = useState(false);
+  const [placedOrderId, setPlacedOrderId] = useState<string | null>(null);
+
+  // filters
+  const [selectedCat, setSelectedCat] = useState<"All" | Category>("All");
+  const [search, setSearch] = useState("");
+
+  // “who is ordering” (only required at checkout)
+  const [guest, setGuest] = useState<FoundGuest | null>(null);
+
+  // confirmation dialog state (shown on Place order)
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  // Start empty (no server-side access to sessionStorage)
+const [lastName, setLastName] = useState("");
+const [roomNumber, setRoomNumber] = useState("");
+
+// After mount, hydrate from sessionStorage
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    setLastName(sessionStorage.getItem("guest-last") ?? "");
+    setRoomNumber(sessionStorage.getItem("guest-room") ?? "");
+  }
+}, []);
+
+  const [rememberRoom, setRememberRoom] = useState(true);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmErr, setConfirmErr] = useState<string | null>(null);
+
+  // page-level error
+  const [error, setError] = useState<string | null>(null);
+
+  // load minibar items
+  useEffect(() => {
+    const items = loadItems()
+      .filter((i) => i.isVisible && i.stockQuantity > 0)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    setMenu(items);
+
+    const onUpdate = () => {
+      const fresh = loadItems()
+        .filter((i) => i.isVisible && i.stockQuantity > 0)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setMenu(fresh);
+    };
+    window.addEventListener(MINIBAR_UPDATE_EVENT, onUpdate);
+    return () => window.removeEventListener(MINIBAR_UPDATE_EVENT, onUpdate);
+  }, []);
+
+  // derived values
+  const total = useMemo(
+    () => cart.reduce((sum, l) => sum + l.price * l.quantity, 0),
+    [cart]
+  );
+
+  const categories = useMemo<("All" | Category)[]>(() => {
+    const set = new Set<Category>();
+    for (const m of menu) set.add(m.category);
+    return ["All", ...Array.from(set)];
+  }, [menu]);
+
+  const filteredMenu = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const base =
+      selectedCat === "All" ? menu : menu.filter((m) => m.category === selectedCat);
+    if (!q) return base;
+    return base.filter((m) => m.name.toLowerCase().includes(q));
+  }, [menu, selectedCat, search]);
+
+  // cart ops
+  const addToCart = (item: MiniItem) => {
+    setCart((c) => {
+      const existing = c.find((x) => x.itemId === item.id);
+      if (existing) {
+        const inMenu = menu.find((m) => m.id === item.id);
+        const max = inMenu?.stockQuantity ?? 0;
+        if (existing.quantity >= max) return c;
+        return c.map((x) =>
+          x.itemId === item.id ? { ...x, quantity: x.quantity + 1 } : x
+        );
+      }
+      return [
+        ...c,
+        { itemId: item.id, name: item.name, price: item.price, quantity: 1 },
+      ];
+    });
+  };
+
+  const decFromCart = (id: string) =>
+    setCart((c) =>
+      c
+        .map((x) =>
+          x.itemId === id ? { ...x, quantity: Math.max(0, x.quantity - 1) } : x
+        )
+        .filter((x) => x.quantity > 0)
+    );
+
+  const removeFromCart = (id: string) =>
+    setCart((c) => c.filter((x) => x.itemId !== id));
+
+  /* ----------------------- checkout / confirmation ---------------------- */
+
+  // open confirm dialog (or directly place if already confirmed once)
+  const onCheckoutClick = () => {
+    setError(null);
+    if (cart.length === 0) {
+      setError("Your cart is empty.");
+      return;
+    }
+    // if we already confirmed earlier in the session, go straight to placing
+    if (guest) {
+      void placeOrderWithGuest(guest);
+      return;
+    }
+    setConfirmErr(null);
+    setConfirmOpen(true);
+  };
+
+  // confirm last name + room, verify guest, then place
+  const confirmAndPlace = async () => {
+    setConfirmErr(null);
+    const ln = lastName.trim();
+    const rn = roomNumber.trim();
+    if (!ln || !rn) {
+      setConfirmErr("Please enter last name and room number.");
+      return;
+    }
+
+    setConfirming(true);
+    try {
+      const { data, error } = await supabase
+        .from("guests")
+        .select("id, first_name, last_name, room_number, status")
+        .ilike("last_name", ln)
+        .eq("room_number", rn)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) {
+        setConfirmErr("Guest not found. Please check your details.");
+        return;
+      }
+      if (data.status !== "Checked In") {
+        setConfirmErr("This room is not currently checked in.");
+        return;
+      }
+
+      const g = data as FoundGuest;
+      setGuest(g);
+      if (rememberRoom && typeof window !== "undefined") {
+  sessionStorage.setItem("guest-room", rn);
+  sessionStorage.setItem("guest-last", ln);
+}
+
+
+      setConfirmOpen(false);
+      await placeOrderWithGuest(g);
+    } catch (e: any) {
+      setConfirmErr(e.message ?? "Unable to verify guest.");
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  /* ----------------------------- placing -------------------------------- */
+
+  const placeOrderWithGuest = async (g: FoundGuest) => {
+    setError(null);
+
+    // verify stock again
+    const freshMenu = loadItems();
+    for (const line of cart) {
+      const menuItem = freshMenu.find((m) => m.id === line.itemId);
+      if (!menuItem || !menuItem.isVisible || menuItem.stockQuantity < line.quantity) {
+        setError(
+          `Sorry, "${line.name}" is no longer available in the requested quantity.`
+        );
+        return;
+      }
+    }
+
+    setPlacing(true);
+    try {
+      // 1) orders (includes guest_last_name)
+      const { data: order, error: orderErr } = await supabase
+        .from("orders")
+        .insert([
+          {
+            guest_id: g.id,
+            room_number: g.room_number,
+            source: "minibar",
+            status: "Pending",
+            notes: notes || null,
+            guest_last_name: g.last_name ?? null, // requires column in orders
+          },
+        ])
+        .select("id")
+        .single();
+
+      if (orderErr) throw orderErr;
+      const orderId = order!.id as string;
+
+      // 2) order_items (snapshot)
+      const itemsPayload = cart.map((l) => ({
+        order_id: orderId,
+        minibar_item: l.itemId,
+        name_snapshot: l.name,
+        price_snapshot: l.price,
+        quantity: l.quantity,
+        line_total: l.price * l.quantity,
+      }));
+
+      const { error: itemsErr } = await supabase.from("order_items").insert(itemsPayload);
+      if (itemsErr) throw itemsErr;
+
+      // 3) update local stock
+      const updatedMenu = freshMenu.map((m) => {
+        const line = cart.find((x) => x.itemId === m.id);
+        if (!line) return m;
+        return { ...m, stockQuantity: Math.max(0, m.stockQuantity - line.quantity) };
+      });
+      saveItems(updatedMenu);
+      setMenu(
+        updatedMenu
+          .filter((i) => i.isVisible && i.stockQuantity > 0)
+          .sort((a, b) => a.name.localeCompare(b.name))
+      );
+
+      setPlacedOrderId(orderId);
+      setCart([]);
+      setStep("done");
+    } catch (err: any) {
+      setError(err.message ?? "Failed to place order.");
+    } finally {
+      setPlacing(false);
+    }
+  };
+
+  /* -------------------------------- UI --------------------------------- */
+
+  // ✅ Confirmation page
+  if (step === "done") {
+    return (
+      <div className="relative min-h-screen bg-[#1d1d1d] p-6 flex items-center justify-center overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-yellow-100/5 via-transparent to-indigo-200/10 pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.05),transparent_70%)] pointer-events-none" />
+
+        <Card className="relative max-w-xl w-full shadow-lg border border-white/5 bg-[#232323]/80 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-white text-xl font-semibold">
+              <IconCheck className="size-5 text-green-500" />
+              Order placed!
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-gray-100">
+            <p>
+              Thank you{" "}
+              <span className="font-semibold">{guest?.first_name ?? ""}</span>! Your
+              minibar request was submitted.
+            </p>
+           <p className="text-sm text-gray-400">
+  Order ID:&nbsp;
+  <span className="font-mono text-gray-300 tracking-wide">
+    {placedOrderId?.slice(0, 8).toUpperCase()}
+  </span>
+</p>
+
+            <Button className="mt-2" onClick={() => window.location.reload()}>
+              Place another order
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ✅ Order page (guests build cart first)
+  return (
+    <div className="relative min-h-screen bg-[#1d1d1d] text-gray-100 p-4 md:p-6 overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-yellow-100/15 via-transparent to-indigo-200/15 pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.04),transparent_70%)] pointer-events-none" />
+
+      <div className="relative mx-auto max-w-6xl">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-semibold">Minibar Order</h1>
+            <p className="text-muted-foreground">
+              {guest
+                ? `Room ${guest.room_number} • ${guest.first_name ?? ""} ${guest.last_name ?? ""}`
+                : "Build your cart, then confirm your stay at checkout."}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="gap-1">
+              <IconShoppingCart className="size-4" />
+              {cart.reduce((sum, l) => sum + l.quantity, 0)}
+            </Badge>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Menu */}
+          <Card className="lg:col-span-2 shadow-sm">
+            <CardHeader>
+              <CardTitle>Available items</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Filters */}
+              <div className="sticky top-0 z-10 -mx-4 md:mx-0 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70 border-b">
+                <div className="px-4 py-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div className="overflow-x-auto no-scrollbar">
+                    <div className="flex items-center gap-2 whitespace-nowrap">
+                      {categories.map((cat) => {
+                        const count =
+                          cat === "All"
+                            ? menu.length
+                            : menu.filter((m) => m.category === cat).length;
+                        const active = selectedCat === cat;
+                        return (
+                          <button
+                            key={cat}
+                            onClick={() => setSelectedCat(cat)}
+                            className={[
+                              "rounded-full px-3 py-1 text-sm border transition-colors",
+                              active
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "bg-background hover:bg-muted border-muted-foreground/20",
+                            ].join(" ")}
+                          >
+                            {cat} <span className="opacity-70">({count})</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="relative w-full md:w-64">
+                    <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                    <Input
+                      className="pl-9"
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                      placeholder="Search items…"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {filteredMenu.length === 0 && (
+                <p className="text-sm text-muted-foreground px-1">
+                  No items match your filters.
+                </p>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredMenu.map((m) => {
+                  const inCart = cart.find((c) => c.itemId === m.id);
+                  const remaining = m.stockQuantity - (inCart?.quantity ?? 0);
+                  return (
+                    <div
+                      key={m.id}
+                      className="rounded-lg border bg-white p-4 flex gap-4 items-start shadow-sm"
+                    >
+                      {/* Image */}
+                      <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+                        {m.imageUrl ? (
+                          <img
+                            src={m.imageUrl}
+                            alt={m.name}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                            No image
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Text */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="font-medium truncate">{m.name}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {m.category === "Other" && m.customCategory
+                              ? m.customCategory
+                              : m.category}
+                          </div>
+                        </div>
+
+                        {m.description && (
+                          <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                            {m.description}
+                          </p>
+                        )}
+
+                        <div className="flex items-center gap-3 mt-2 text-sm">
+                          <Badge variant="outline">Price: {m.price}</Badge>
+                          {m.calories != null && (
+                            <Badge variant="outline">{m.calories} cal</Badge>
+                          )}
+                          {m.allergicDetails && (
+                            <Badge variant="outline">Allergens</Badge>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => addToCart(m)}
+                          disabled={remaining <= 0}
+                          title={remaining <= 0 ? "Out of stock" : "Add to cart"}
+                        >
+                          Add
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => decFromCart(m.id)}
+                          disabled={!inCart}
+                          title={!inCart ? "Not in cart" : "Remove one"}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Cart */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle>Cart</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {cart.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Your cart is empty.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {cart.map((l) => (
+                    <div
+                      key={l.itemId}
+                      className="flex items-center justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">{l.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {l.quantity} × {l.price}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => decFromCart(l.itemId)}
+                        >
+                          −
+                        </Button>
+                        <span className="w-6 text-center">{l.quantity}</span>
+                        <Button
+                          size="icon"
+                          onClick={() => {
+                            const m = menu.find((x) => x.id === l.itemId);
+                            if (!m) return;
+                            addToCart(m);
+                          }}
+                        >
+                          +
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => removeFromCart(l.itemId)}
+                        >
+                          <IconCircleX className="size-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+
+                  <Separator />
+
+                  <div className="space-y-2">
+                    <Label htmlFor="notes">Notes (optional)</Label>
+                    <Textarea
+                      id="notes"
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Anything we should know?"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">Total</div>
+                    <div className="text-lg font-semibold">{total}</div>
+                  </div>
+                  {error && (
+                    <p className="text-sm text-red-600 flex items-center gap-2">
+                      <IconAlertTriangle className="size-4" /> {error}
+                    </p>
+                  )}
+                  <Button className="w-full" onClick={onCheckoutClick} disabled={placing}>
+                    {placing ? "Placing..." : "Place order"}
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Confirmation dialog */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm your order</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="last">Last name</Label>
+                <Input
+                  id="last"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="e.g., Smith"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="room">Room number</Label>
+                <Input
+                  id="room"
+                  value={roomNumber}
+                  onChange={(e) => setRoomNumber(e.target.value)}
+                  placeholder="e.g., 205"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="remember"
+                checked={rememberRoom}
+                onCheckedChange={(v) => setRememberRoom(Boolean(v))}
+              />
+              <Label htmlFor="remember" className="text-sm text-muted-foreground">
+                Remember me on this device
+              </Label>
+            </div>
+
+            {confirmErr && (
+              <p className="text-sm text-red-600 flex items-center gap-2">
+                <IconAlertTriangle className="size-4" /> {confirmErr}
+              </p>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={confirmAndPlace} disabled={confirming}>
+              {confirming ? "Confirming…" : "Confirm & Place order"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

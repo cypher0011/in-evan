@@ -70,6 +70,38 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Switch } from "@/components/ui/switch"
+// Safe UUID generator that works even when crypto.randomUUID isn't available
+function safeUUID(): string {
+  // Modern browsers / secure contexts
+  // @ts-ignore - narrow typing
+  if (typeof crypto !== "undefined" && crypto && typeof crypto.randomUUID === "function") {
+    // @ts-ignore
+    return crypto.randomUUID();
+  }
+  // Good fallback using getRandomValues if available
+  const g = (typeof crypto !== "undefined" && crypto && typeof crypto.getRandomValues === "function")
+    ? crypto.getRandomValues.bind(crypto)
+    : null;
+
+  const bytes = new Uint8Array(16);
+  if (g) g(bytes);
+  else {
+    // Last-resort fallback (less random, but avoids crashes)
+    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+  }
+  // RFC 4122 version 4 adjustments
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+  const toHex = (n: number) => n.toString(16).padStart(2, "0");
+  return (
+    [...bytes.slice(0, 4)].map(toHex).join("") + "-" +
+    [...bytes.slice(4, 6)].map(toHex).join("") + "-" +
+    [...bytes.slice(6, 8)].map(toHex).join("") + "-" +
+    [...bytes.slice(8,10)].map(toHex).join("") + "-" +
+    [...bytes.slice(10)].map(toHex).join("")
+  );
+}
 
 const SAMPLE_DATA: MiniItem[] = [
   {
@@ -241,7 +273,8 @@ export default function MiniBarManager() {
       setItems((old) => old.map((it) => (it.id === editingItem.id ? updated : it)))
     } else {
       const newItem: MiniItem = {
-        id: crypto.randomUUID(),
+        id: safeUUID(),
+
         name: formData.name!.trim(),
         category: formData.category || "Other",
         customCategory: formData.category === "Other" ? formData.customCategory?.trim() : undefined,

@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import MiniBarManager from "@/components/minibar/Manager"
 
+
 export default function MiniBarPage() {
   const vars = {
     "--sidebar-width": "calc(var(--spacing) * 72)",
