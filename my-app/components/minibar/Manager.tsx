@@ -1,7 +1,6 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { loadItems, saveItems, type MiniItem, type Category } from "./storage"
+import * as React from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -13,7 +12,7 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table"
+} from "@tanstack/react-table";
 import {
   IconBottle,
   IconCandy,
@@ -29,22 +28,22 @@ import {
   IconSearch,
   IconTrash,
   IconTool,
-} from "@tabler/icons-react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
+} from "@tabler/icons-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -52,7 +51,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -60,7 +59,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -68,261 +67,251 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Switch } from "@/components/ui/switch"
-// Safe UUID generator that works even when crypto.randomUUID isn't available
-function safeUUID(): string {
-  // Modern browsers / secure contexts
-  // @ts-ignore - narrow typing
-  if (typeof crypto !== "undefined" && crypto && typeof crypto.randomUUID === "function") {
-    // @ts-ignore
-    return crypto.randomUUID();
-  }
-  // Good fallback using getRandomValues if available
-  const g = (typeof crypto !== "undefined" && crypto && typeof crypto.getRandomValues === "function")
-    ? crypto.getRandomValues.bind(crypto)
-    : null;
+} from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
+import { supabase } from "@/lib/supabase/supabase";
 
-  const bytes = new Uint8Array(16);
-  if (g) g(bytes);
-  else {
-    // Last-resort fallback (less random, but avoids crashes)
-    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
-  }
-  // RFC 4122 version 4 adjustments
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+type Category =
+  | "Beverage"
+  | "Snack"
+  | "Dessert"
+  | "Water"
+  | "Alcohol"
+  | "Main Course"
+  | "Breakfast"
+  | "Other";
 
-  const toHex = (n: number) => n.toString(16).padStart(2, "0");
-  return (
-    [...bytes.slice(0, 4)].map(toHex).join("") + "-" +
-    [...bytes.slice(4, 6)].map(toHex).join("") + "-" +
-    [...bytes.slice(6, 8)].map(toHex).join("") + "-" +
-    [...bytes.slice(8,10)].map(toHex).join("") + "-" +
-    [...bytes.slice(10)].map(toHex).join("")
-  );
-}
-
-const SAMPLE_DATA: MiniItem[] = [
-  {
-    id: "1",
-    name: "Coca Cola",
-    category: "Beverage",
-    price: 15,
-    imageUrl: "",
-    allergicDetails: "",
-    calories: 140,
-    stockQuantity: 24,
-    description: "Classic Coca-Cola 330ml can",
-    isVisible: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    name: "Pringles Original",
-    category: "Snack",
-    price: 25,
-    imageUrl: "",
-    allergicDetails: "Contains wheat, milk",
-    calories: 150,
-    stockQuantity: 15,
-    description: "Crispy potato chips, 165g",
-    isVisible: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "3",
-    name: "Snickers Bar",
-    category: "Dessert",
-    price: 12,
-    imageUrl: "",
-    allergicDetails: "Contains peanuts, milk, soy",
-    calories: 250,
-    stockQuantity: 30,
-    description: "Chocolate bar with peanuts and caramel",
-    isVisible: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "4",
-    name: "Evian Water",
-    category: "Water",
-    price: 10,
-    imageUrl: "",
-    allergicDetails: "",
-    calories: 0,
-    stockQuantity: 48,
-    description: "Natural mineral water 500ml",
-    isVisible: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "5",
-    name: "Red Bull",
-    category: "Beverage",
-    price: 20,
-    imageUrl: "",
-    allergicDetails: "Contains caffeine",
-    calories: 110,
-    stockQuantity: 0,
-    description: "Energy drink 250ml",
-    isVisible: false,
-    createdAt: new Date().toISOString(),
-  },
-]
-
-async function fileToDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result))
-    reader.onerror = reject
-    reader.readAsDataURL(file)
-  })
-}
+export type MiniItem = {
+  id: string;
+  name: string;
+  category: Category;
+  custom_category?: string | null;
+  price: number;
+  description?: string | null;
+  allergic_details?: string | null;
+  calories?: number | null;
+  stock_quantity: number;
+  is_visible: boolean;
+  image_url?: string | null;
+  created_at: string;
+};
 
 const getCategoryIcon = (category: Category) => {
   switch (category) {
     case "Beverage":
-      return <IconCoffee className="size-5" />
+      return <IconCoffee className="size-5" />;
     case "Water":
-      return <IconBottle className="size-5" />
+      return <IconBottle className="size-5" />;
     case "Snack":
     case "Dessert":
-      return <IconCandy className="size-5" />
+      return <IconCandy className="size-5" />;
     default:
-      return <IconTool className="size-5" />
+      return <IconTool className="size-5" />;
   }
-}
+};
 
 export default function MiniBarManager() {
-  const [items, setItems] = React.useState<MiniItem[]>(() => {
-    if (typeof window === "undefined") return []
-    const loaded = loadItems()
-    if (loaded.length === 0) {
-      saveItems(SAMPLE_DATA)
-      return SAMPLE_DATA
-    }
-    return loaded
-  })
+  const [items, setItems] = React.useState<MiniItem[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [err, setErr] = React.useState<string | null>(null);
 
-  const [hydrated, setHydrated] = React.useState(false)
-  const [dialogOpen, setDialogOpen] = React.useState(false)
-  const [editingItem, setEditingItem] = React.useState<MiniItem | null>(null)
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [editingItem, setEditingItem] = React.useState<MiniItem | null>(null);
 
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+  const [sorting, setSorting] = React.useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] =
+    React.useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] =
+    React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState({});
 
   const [formData, setFormData] = React.useState<Partial<MiniItem>>({
     name: "",
     category: "Beverage",
-    customCategory: "",
+    custom_category: "",
     price: 0,
     description: "",
-    allergicDetails: "",
+    allergic_details: "",
     calories: undefined,
-    stockQuantity: 0,
-    isVisible: true,
-    imageUrl: "",
-  })
+    stock_quantity: 0,
+    is_visible: true,
+    image_url: "",
+  });
 
-  React.useEffect(() => setHydrated(true), [])
+  // ---------- CRUD helpers ----------
+
+  const fetchItems = React.useCallback(async () => {
+    setErr(null);
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("minibar_items")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) setErr(error.message);
+    else setItems(data as MiniItem[]);
+    setLoading(false);
+  }, []);
+
   React.useEffect(() => {
-    if (typeof window !== "undefined") saveItems(items)
-  }, [items])
+    fetchItems();
+  }, [fetchItems]);
 
   const resetForm = () => {
     setFormData({
       name: "",
       category: "Beverage",
-      customCategory: "",
+      custom_category: "",
       price: 0,
       description: "",
-      allergicDetails: "",
+      allergic_details: "",
       calories: undefined,
-      stockQuantity: 0,
-      isVisible: true,
-      imageUrl: "",
-    })
-    setEditingItem(null)
-  }
+      stock_quantity: 0,
+      is_visible: true,
+      image_url: "",
+    });
+    setEditingItem(null);
+  };
 
   const openAddDialog = () => {
-    resetForm()
-    setDialogOpen(true)
-  }
+    resetForm();
+    setDialogOpen(true);
+  };
 
   const openEditDialog = (item: MiniItem) => {
-    setEditingItem(item)
-    setFormData(item)
-    setDialogOpen(true)
-  }
+    setEditingItem(item);
+    setFormData({
+      ...item,
+      custom_category: item.custom_category ?? "",
+      description: item.description ?? "",
+      allergic_details: item.allergic_details ?? "",
+      image_url: item.image_url ?? "",
+    });
+    setDialogOpen(true);
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name?.trim()) return;
 
-    if (!formData.name?.trim()) return
+    const payload = {
+      name: formData.name!.trim(),
+      category: (formData.category || "Other") as Category,
+      custom_category:
+        formData.category === "Other"
+          ? (formData.custom_category || "").trim() || null
+          : null,
+      price: formData.price || 0,
+      description: (formData.description || "").trim() || null,
+      allergic_details: (formData.allergic_details || "").trim() || null,
+      calories:
+        formData.calories === undefined || formData.calories === null
+          ? null
+          : Number(formData.calories),
+      stock_quantity: formData.stock_quantity || 0,
+      is_visible: formData.is_visible ?? true,
+      image_url: formData.image_url || null,
+    };
 
     if (editingItem) {
-      const updated: MiniItem = {
-        ...editingItem,
-        ...formData,
-        name: formData.name!.trim(),
-      }
-      setItems((old) => old.map((it) => (it.id === editingItem.id ? updated : it)))
+      const { error } = await supabase
+        .from("minibar_items")
+        .update(payload)
+        .eq("id", editingItem.id);
+      if (error) return setErr(error.message);
     } else {
-      const newItem: MiniItem = {
-        id: safeUUID(),
-
-        name: formData.name!.trim(),
-        category: formData.category || "Other",
-        customCategory: formData.category === "Other" ? formData.customCategory?.trim() : undefined,
-        price: formData.price || 0,
-        description: formData.description?.trim() || "",
-        allergicDetails: formData.allergicDetails?.trim() || "",
-        calories: formData.calories,
-        stockQuantity: formData.stockQuantity || 0,
-        isVisible: formData.isVisible ?? true,
-        imageUrl: formData.imageUrl || "",
-        createdAt: new Date().toISOString(),
-      }
-      setItems((old) => [newItem, ...old])
+      const { error } = await supabase.from("minibar_items").insert([payload]);
+      if (error) return setErr(error.message);
     }
 
-    setDialogOpen(false)
-    resetForm()
-  }
+    setDialogOpen(false);
+    resetForm();
+    fetchItems();
+  };
 
-  const handleDelete = (id: string) => {
-    setItems((old) => old.filter((i) => i.id !== id))
-  }
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from("minibar_items").delete().eq("id", id);
+    if (error) return setErr(error.message);
+    setItems((prev) => prev.filter((i) => i.id !== id));
+  };
 
-  const toggleVisibility = (id: string) => {
+  const toggleVisibility = async (id: string) => {
+    const target = items.find((i) => i.id === id);
+    if (!target) return;
+    const next = !target.is_visible;
+    // optimistic
     setItems((old) =>
-      old.map((i) => (i.id === id ? { ...i, isVisible: !i.isVisible } : i))
-    )
-  }
-
-  const updateStock = (id: string, newQuantity: number) => {
-    setItems((old) =>
-      old.map((i) => (i.id === id ? { ...i, stockQuantity: Math.max(0, newQuantity) } : i))
-    )
-  }
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const dataUrl = await fileToDataUrl(file)
-      setFormData((prev) => ({ ...prev, imageUrl: dataUrl }))
+      old.map((i) => (i.id === id ? { ...i, is_visible: next } : i))
+    );
+    const { error } = await supabase
+      .from("minibar_items")
+      .update({ is_visible: next })
+      .eq("id", id);
+    if (error) {
+      setErr(error.message);
+      fetchItems();
     }
+  };
+
+  const updateStock = async (id: string, newQuantity: number) => {
+    // optimistic
+    setItems((old) =>
+      old.map((i) =>
+        i.id === id ? { ...i, stock_quantity: Math.max(0, newQuantity) } : i
+      )
+    );
+    const { error } = await supabase
+      .from("minibar_items")
+      .update({ stock_quantity: Math.max(0, newQuantity) })
+      .eq("id", id);
+    if (error) {
+      setErr(error.message);
+      fetchItems();
+    }
+  };
+
+  // Upload image to Supabase Storage (bucket: minibar)
+  // Upload image to Supabase Storage (bucket: minibar)
+const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  setErr(null);
+
+  if (!file.type.startsWith("image/")) {
+    setErr("Please select an image file.");
+    return;
   }
 
-  const handleBulkDelete = () => {
-    const selectedIds = Object.keys(rowSelection)
-    setItems((old) => old.filter((item) => !selectedIds.includes(item.id)))
-    setRowSelection({})
+  if (file.size > 5 * 1024 * 1024) {
+    setErr("Image too large (max 5MB).");
+    return;
   }
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch("/admin/api/upload", {
+  method: "POST",
+  body: formData,
+});
+
+
+
+  const ct = res.headers.get("content-type") || "";
+  const data = ct.includes("application/json")
+    ? await res.json()
+    : { error: await res.text() };
+
+  if (!res.ok) {
+    setErr(data.error || "Upload failed");
+    return;
+  }
+
+  setFormData((p) => ({ ...p, image_url: data.url }));
+};
+
+
+  // ---------- table columns ----------
 
   const columns: ColumnDef<MiniItem>[] = [
     {
@@ -345,27 +334,29 @@ export default function MiniBarManager() {
       enableHiding: false,
     },
     {
-      accessorKey: "imageUrl",
+      accessorKey: "image_url",
       header: "Image",
       cell: ({ row }) => {
-        const item = row.original
-        return item.imageUrl ? (
+        const item = row.original;
+        return item.image_url ? (
           <Avatar className="size-10 rounded">
-            <AvatarImage src={item.imageUrl} />
-            <AvatarFallback><IconPhoto className="size-5" /></AvatarFallback>
+            <AvatarImage src={item.image_url} />
+            <AvatarFallback>
+              <IconPhoto className="size-5" />
+            </AvatarFallback>
           </Avatar>
         ) : (
           <div className="size-10 rounded border flex items-center justify-center bg-muted">
             <IconPhoto className="size-5 text-muted-foreground" />
           </div>
-        )
+        );
       },
     },
     {
       accessorKey: "name",
       header: "Name",
       cell: ({ row }) => {
-        const item = row.original
+        const item = row.original;
         return (
           <div>
             <div className="font-medium">{item.name}</div>
@@ -375,71 +366,97 @@ export default function MiniBarManager() {
               </div>
             )}
           </div>
-        )
+        );
       },
     },
     {
       accessorKey: "category",
       header: "Category",
       cell: ({ row }) => {
-        const item = row.original
+        const item = row.original;
+        const label =
+          item.category === "Other" && item.custom_category
+            ? item.custom_category
+            : item.category;
         return (
           <Badge variant="outline" className="gap-1.5">
             {getCategoryIcon(item.category)}
-            {item.category === "Other" && item.customCategory ? item.customCategory : item.category}
+            {label}
           </Badge>
-        )
+        );
       },
     },
     {
       accessorKey: "price",
       header: "Price",
-      cell: ({ row }) => <div className="font-medium"><span className="icon-saudi_riyal"></span>{row.original.price}</div>,
+      cell: ({ row }) => (
+        <div className="font-medium">{row.original.price}</div>
+      ),
     },
     {
-      accessorKey: "stockQuantity",
+      accessorKey: "stock_quantity",
       header: "Stock",
       cell: ({ row }) => {
-        const item = row.original
+        const item = row.original;
         return (
           <div className="flex items-center gap-2">
             <Input
               type="number"
               min="0"
-              value={item.stockQuantity}
+              value={item.stock_quantity}
               onChange={(e) => updateStock(item.id, Number(e.target.value))}
               className="w-20"
               onClick={(e) => e.stopPropagation()}
             />
-            <span className={`text-sm ${item.stockQuantity === 0 ? "text-destructive" : item.stockQuantity < 5 ? "text-yellow-600" : "text-muted-foreground"}`}>
-              {item.stockQuantity === 0 ? "Out" : item.stockQuantity < 5 ? "Low" : ""}
+            <span
+              className={`text-sm ${
+                item.stock_quantity === 0
+                  ? "text-destructive"
+                  : item.stock_quantity < 5
+                  ? "text-yellow-600"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {item.stock_quantity === 0
+                ? "Out"
+                : item.stock_quantity < 5
+                ? "Low"
+                : ""}
             </span>
           </div>
-        )
+        );
       },
     },
     {
-      accessorKey: "isVisible",
+      accessorKey: "is_visible",
       header: "Visibility",
       cell: ({ row }) => {
-        const item = row.original
+        const item = row.original;
         return (
           <Button
-            variant={item.isVisible ? "default" : "outline"}
+            variant={item.is_visible ? "default" : "outline"}
             size="sm"
             onClick={() => toggleVisibility(item.id)}
             className="gap-1.5"
           >
-            {item.isVisible ? <><IconEye className="size-4" /> Visible</> : <><IconEyeOff className="size-4" /> Hidden</>}
+            {item.is_visible ? (
+              <>
+                <IconEye className="size-4" /> Visible
+              </>
+            ) : (
+              <>
+                <IconEyeOff className="size-4" /> Hidden
+              </>
+            )}
           </Button>
-        )
+        );
       },
     },
     {
       id: "actions",
       enableHiding: false,
       cell: ({ row }) => {
-        const item = row.original
+        const item = row.original;
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -461,10 +478,10 @@ export default function MiniBarManager() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        )
+        );
       },
     },
-  ]
+  ];
 
   const table = useReactTable({
     data: items,
@@ -478,11 +495,7 @@ export default function MiniBarManager() {
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: { sorting, columnFilters, columnVisibility, rowSelection },
-  })
-
-  if (!hydrated) {
-    return <div className="p-6">Loading...</div>
-  }
+  });
 
   return (
     <div className="space-y-6">
@@ -501,18 +514,24 @@ export default function MiniBarManager() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Items ({table.getFilteredRowModel().rows.length})</CardTitle>
+            <CardTitle>
+              {loading ? "Loading items…" : `Items (${table.getFilteredRowModel().rows.length})`}
+            </CardTitle>
             <div className="relative w-64">
               <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 placeholder="Search items..."
                 value={(table.getColumn("name")?.getFilterValue() as string) ?? ""}
-                onChange={(event) => table.getColumn("name")?.setFilterValue(event.target.value)}
+                onChange={(event) =>
+                  table.getColumn("name")?.setFilterValue(event.target.value)
+                }
                 className="pl-9"
               />
             </div>
           </div>
+          {err && <p className="text-sm text-red-600 mt-2">{err}</p>}
         </CardHeader>
+
         <CardContent className="p-0">
           {table.getFilteredSelectedRowModel().rows.length > 0 && (
             <div className="flex items-center justify-between gap-2 p-4 bg-muted/50">
@@ -523,7 +542,18 @@ export default function MiniBarManager() {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={handleBulkDelete}
+                onClick={async () => {
+                  const ids = table
+                    .getFilteredSelectedRowModel()
+                    .rows.map((r) => (r.original as MiniItem).id);
+                  if (ids.length === 0) return;
+                  const { error } = await supabase
+                    .from("minibar_items")
+                    .delete()
+                    .in("id", ids);
+                  if (error) setErr(error.message);
+                  fetchItems();
+                }}
                 className="gap-2"
               >
                 <IconTrash className="size-4" />
@@ -531,6 +561,7 @@ export default function MiniBarManager() {
               </Button>
             </div>
           )}
+
           <div className="rounded-lg border-t overflow-x-auto">
             <Table>
               <TableHeader>
@@ -540,19 +571,25 @@ export default function MiniBarManager() {
                       <TableHead key={header.id}>
                         {header.isPlaceholder
                           ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
                       </TableHead>
                     ))}
                   </TableRow>
                 ))}
               </TableHeader>
               <TableBody>
-                {table.getRowModel().rows?.length ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={columns.length} className="h-24">
+                      Loading…
+                    </TableCell>
+                  </TableRow>
+                ) : table.getRowModel().rows?.length ? (
                   table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      data-state={row.getIsSelected() && "selected"}
-                    >
+                    <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>
                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -570,6 +607,7 @@ export default function MiniBarManager() {
               </TableBody>
             </Table>
           </div>
+
           <div className="flex items-center justify-between gap-4 p-4 border-t">
             <div className="text-sm text-muted-foreground">
               Showing {table.getRowModel().rows.length} of {table.getFilteredRowModel().rows.length} item(s)
@@ -615,7 +653,7 @@ export default function MiniBarManager() {
                 <Input
                   id="name"
                   required
-                  value={formData.name}
+                  value={formData.name || ""}
                   onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
                   placeholder="e.g., Coca Cola"
                 />
@@ -624,12 +662,10 @@ export default function MiniBarManager() {
               <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
                 <Select
-                  value={formData.category}
+                  value={(formData.category as Category) || "Beverage"}
                   onValueChange={(v) => {
-                    setFormData((p) => ({ ...p, category: v as Category }))
-                    if (v !== "Other") {
-                      setFormData((p) => ({ ...p, customCategory: "" }))
-                    }
+                    setFormData((p) => ({ ...p, category: v as Category }));
+                    if (v !== "Other") setFormData((p) => ({ ...p, custom_category: "" }));
                   }}
                 >
                   <SelectTrigger>
@@ -654,8 +690,10 @@ export default function MiniBarManager() {
                   <Input
                     id="customCategory"
                     required
-                    value={formData.customCategory}
-                    onChange={(e) => setFormData((p) => ({ ...p, customCategory: e.target.value }))}
+                    value={formData.custom_category || ""}
+                    onChange={(e) =>
+                      setFormData((p) => ({ ...p, custom_category: e.target.value }))
+                    }
                     placeholder="e.g., Hot Meals, Fresh Juice"
                   />
                 </div>
@@ -669,8 +707,10 @@ export default function MiniBarManager() {
                   step="0.01"
                   min="0"
                   required
-                  value={formData.price}
-                  onChange={(e) => setFormData((p) => ({ ...p, price: Number(e.target.value) }))}
+                  value={formData.price ?? 0}
+                  onChange={(e) =>
+                    setFormData((p) => ({ ...p, price: Number(e.target.value) }))
+                  }
                 />
               </div>
 
@@ -680,9 +720,12 @@ export default function MiniBarManager() {
                   id="calories"
                   type="number"
                   min="0"
-                  value={formData.calories || ""}
+                  value={formData.calories ?? ""}
                   onChange={(e) =>
-                    setFormData((p) => ({ ...p, calories: e.target.value ? Number(e.target.value) : undefined }))
+                    setFormData((p) => ({
+                      ...p,
+                      calories: e.target.value ? Number(e.target.value) : undefined,
+                    }))
                   }
                   placeholder="e.g., 140"
                 />
@@ -695,8 +738,13 @@ export default function MiniBarManager() {
                   type="number"
                   min="0"
                   required
-                  value={formData.stockQuantity}
-                  onChange={(e) => setFormData((p) => ({ ...p, stockQuantity: Number(e.target.value) }))}
+                  value={formData.stock_quantity ?? 0}
+                  onChange={(e) =>
+                    setFormData((p) => ({
+                      ...p,
+                      stock_quantity: Number(e.target.value),
+                    }))
+                  }
                   placeholder="e.g., 24"
                 />
               </div>
@@ -706,7 +754,7 @@ export default function MiniBarManager() {
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
-                value={formData.description}
+                value={formData.description || ""}
                 onChange={(e) => setFormData((p) => ({ ...p, description: e.target.value }))}
                 placeholder="Brief description of the item..."
                 rows={3}
@@ -717,8 +765,10 @@ export default function MiniBarManager() {
               <Label htmlFor="allergicDetails">Allergic Details</Label>
               <Input
                 id="allergicDetails"
-                value={formData.allergicDetails}
-                onChange={(e) => setFormData((p) => ({ ...p, allergicDetails: e.target.value }))}
+                value={formData.allergic_details || ""}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, allergic_details: e.target.value }))
+                }
                 placeholder="e.g., Contains nuts, dairy"
               />
             </div>
@@ -726,9 +776,13 @@ export default function MiniBarManager() {
             <div className="space-y-2">
               <Label htmlFor="image">Image</Label>
               <Input id="image" type="file" accept="image/*" onChange={handleImageUpload} />
-              {formData.imageUrl && (
+              {formData.image_url && (
                 <div className="mt-2">
-                  <img src={formData.imageUrl} alt="Preview" className="h-20 w-20 rounded object-cover border" />
+                  <img
+                    src={formData.image_url}
+                    alt="Preview"
+                    className="h-20 w-20 rounded object-cover border"
+                  />
                 </div>
               )}
             </div>
@@ -736,8 +790,10 @@ export default function MiniBarManager() {
             <div className="flex items-center gap-2">
               <Switch
                 id="isVisible"
-                checked={formData.isVisible}
-                onCheckedChange={(checked) => setFormData((p) => ({ ...p, isVisible: checked }))}
+                checked={!!formData.is_visible}
+                onCheckedChange={(checked) =>
+                  setFormData((p) => ({ ...p, is_visible: checked }))
+                }
               />
               <Label htmlFor="isVisible">Visible to Guests</Label>
             </div>
@@ -752,5 +808,5 @@ export default function MiniBarManager() {
         </DialogContent>
       </Dialog>
     </div>
-  )
+  );
 }

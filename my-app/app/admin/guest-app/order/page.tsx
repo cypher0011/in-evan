@@ -4,7 +4,12 @@ import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/supabase";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,7 +34,7 @@ import {
 } from "@tabler/icons-react";
 
 /* ------------------------------------------------------------------ */
-/* Types + Local minibar storage helpers                               */
+/* Types                                                              */
 /* ------------------------------------------------------------------ */
 
 type Category =
@@ -42,7 +47,7 @@ type Category =
   | "Breakfast"
   | "Other";
 
-export interface MiniItem {
+interface MiniItem {
   id: string;
   name: string;
   category: Category;
@@ -56,32 +61,6 @@ export interface MiniItem {
   isVisible: boolean;
   createdAt: string;
 }
-
-const KEY = "minibar-items";
-const MINIBAR_UPDATE_EVENT = "minibar:items-updated";
-
-function loadItems(): MiniItem[] {
-  try {
-    return JSON.parse(localStorage.getItem(KEY) || "[]") as MiniItem[];
-  } catch {
-    return [];
-  }
-}
-
-function saveItems(items: MiniItem[]) {
-  localStorage.setItem(KEY, JSON.stringify(items));
-  const fire = () => {
-    try {
-      window.dispatchEvent(new CustomEvent(MINIBAR_UPDATE_EVENT));
-    } catch {}
-  };
-  if (typeof queueMicrotask === "function") queueMicrotask(fire);
-  else setTimeout(fire, 0);
-}
-
-/* ------------------------------------------------------------------ */
-/* Page                                                                */
-/* ------------------------------------------------------------------ */
 
 type FoundGuest = {
   id: string;
@@ -98,63 +77,79 @@ type CartLine = {
   quantity: number;
 };
 
-export default function GuestOrderPage() {
-  // flow state: order -> done
-  const [step, setStep] = useState<"order" | "done">("order");
+/* ------------------------------------------------------------------ */
+/* Component                                                           */
+/* ------------------------------------------------------------------ */
 
-  // cart + menu
+export default function GuestOrderPage() {
+  const [step, setStep] = useState<"order" | "done">("order");
   const [menu, setMenu] = useState<MiniItem[]>([]);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [notes, setNotes] = useState("");
   const [placing, setPlacing] = useState(false);
   const [placedOrderId, setPlacedOrderId] = useState<string | null>(null);
 
-  // filters
   const [selectedCat, setSelectedCat] = useState<"All" | Category>("All");
   const [search, setSearch] = useState("");
 
-  // “who is ordering” (only required at checkout)
   const [guest, setGuest] = useState<FoundGuest | null>(null);
 
-  // confirmation dialog state (shown on Place order)
   const [confirmOpen, setConfirmOpen] = useState(false);
-  // Start empty (no server-side access to sessionStorage)
-const [lastName, setLastName] = useState("");
-const [roomNumber, setRoomNumber] = useState("");
-
-// After mount, hydrate from sessionStorage
-useEffect(() => {
-  if (typeof window !== "undefined") {
-    setLastName(sessionStorage.getItem("guest-last") ?? "");
-    setRoomNumber(sessionStorage.getItem("guest-room") ?? "");
-  }
-}, []);
-
+  const [lastName, setLastName] = useState("");
+  const [roomNumber, setRoomNumber] = useState("");
   const [rememberRoom, setRememberRoom] = useState(true);
   const [confirming, setConfirming] = useState(false);
   const [confirmErr, setConfirmErr] = useState<string | null>(null);
-
-  // page-level error
   const [error, setError] = useState<string | null>(null);
 
-  // load minibar items
+  // Hydrate from sessionStorage
   useEffect(() => {
-    const items = loadItems()
-      .filter((i) => i.isVisible && i.stockQuantity > 0)
-      .sort((a, b) => a.name.localeCompare(b.name));
-    setMenu(items);
-
-    const onUpdate = () => {
-      const fresh = loadItems()
-        .filter((i) => i.isVisible && i.stockQuantity > 0)
-        .sort((a, b) => a.name.localeCompare(b.name));
-      setMenu(fresh);
-    };
-    window.addEventListener(MINIBAR_UPDATE_EVENT, onUpdate);
-    return () => window.removeEventListener(MINIBAR_UPDATE_EVENT, onUpdate);
+    if (typeof window !== "undefined") {
+      setLastName(sessionStorage.getItem("guest-last") ?? "");
+      setRoomNumber(sessionStorage.getItem("guest-room") ?? "");
+    }
   }, []);
 
-  // derived values
+  /* ------------------------------------------------------------------ */
+  /* Fetch minibar items from Supabase                                  */
+  /* ------------------------------------------------------------------ */
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from("minibar_items")
+        .select("*")
+        .eq("is_visible", true)
+        .gt("stock_quantity", 0)
+        .order("name", { ascending: true });
+
+      if (error) {
+        console.error("Error loading minibar items:", error);
+        return;
+      }
+
+      const items = (data ?? []).map((d) => ({
+        id: d.id,
+        name: d.name,
+        category: d.category,
+        customCategory: d.custom_category ?? undefined,
+        price: Number(d.price),
+        imageUrl: d.image_url ?? undefined,
+        allergicDetails: d.allergic_details ?? undefined,
+        calories: d.calories ?? undefined,
+        stockQuantity: d.stock_quantity,
+        description: d.description ?? undefined,
+        isVisible: d.is_visible,
+        createdAt: d.created_at,
+      }));
+
+      setMenu(items);
+    })();
+  }, []);
+
+  /* ------------------------------------------------------------------ */
+  /* Derived values                                                     */
+  /* ------------------------------------------------------------------ */
+
   const total = useMemo(
     () => cart.reduce((sum, l) => sum + l.price * l.quantity, 0),
     [cart]
@@ -174,14 +169,15 @@ useEffect(() => {
     return base.filter((m) => m.name.toLowerCase().includes(q));
   }, [menu, selectedCat, search]);
 
-  // cart ops
+  /* ------------------------------------------------------------------ */
+  /* Cart management                                                    */
+  /* ------------------------------------------------------------------ */
+
   const addToCart = (item: MiniItem) => {
     setCart((c) => {
       const existing = c.find((x) => x.itemId === item.id);
       if (existing) {
-        const inMenu = menu.find((m) => m.id === item.id);
-        const max = inMenu?.stockQuantity ?? 0;
-        if (existing.quantity >= max) return c;
+        if (existing.quantity >= item.stockQuantity) return c;
         return c.map((x) =>
           x.itemId === item.id ? { ...x, quantity: x.quantity + 1 } : x
         );
@@ -205,16 +201,16 @@ useEffect(() => {
   const removeFromCart = (id: string) =>
     setCart((c) => c.filter((x) => x.itemId !== id));
 
-  /* ----------------------- checkout / confirmation ---------------------- */
+  /* ------------------------------------------------------------------ */
+  /* Checkout confirmation + guest validation                           */
+  /* ------------------------------------------------------------------ */
 
-  // open confirm dialog (or directly place if already confirmed once)
   const onCheckoutClick = () => {
     setError(null);
     if (cart.length === 0) {
       setError("Your cart is empty.");
       return;
     }
-    // if we already confirmed earlier in the session, go straight to placing
     if (guest) {
       void placeOrderWithGuest(guest);
       return;
@@ -223,7 +219,6 @@ useEffect(() => {
     setConfirmOpen(true);
   };
 
-  // confirm last name + room, verify guest, then place
   const confirmAndPlace = async () => {
     setConfirmErr(null);
     const ln = lastName.trim();
@@ -255,10 +250,9 @@ useEffect(() => {
       const g = data as FoundGuest;
       setGuest(g);
       if (rememberRoom && typeof window !== "undefined") {
-  sessionStorage.setItem("guest-room", rn);
-  sessionStorage.setItem("guest-last", ln);
-}
-
+        sessionStorage.setItem("guest-room", rn);
+        sessionStorage.setItem("guest-last", ln);
+      }
 
       setConfirmOpen(false);
       await placeOrderWithGuest(g);
@@ -269,26 +263,15 @@ useEffect(() => {
     }
   };
 
-  /* ----------------------------- placing -------------------------------- */
+  /* ------------------------------------------------------------------ */
+  /* Place order (with DB + stock decrement)                            */
+  /* ------------------------------------------------------------------ */
 
   const placeOrderWithGuest = async (g: FoundGuest) => {
     setError(null);
-
-    // verify stock again
-    const freshMenu = loadItems();
-    for (const line of cart) {
-      const menuItem = freshMenu.find((m) => m.id === line.itemId);
-      if (!menuItem || !menuItem.isVisible || menuItem.stockQuantity < line.quantity) {
-        setError(
-          `Sorry, "${line.name}" is no longer available in the requested quantity.`
-        );
-        return;
-      }
-    }
-
     setPlacing(true);
     try {
-      // 1) orders (includes guest_last_name)
+      // 1) Insert into orders
       const { data: order, error: orderErr } = await supabase
         .from("orders")
         .insert([
@@ -298,7 +281,7 @@ useEffect(() => {
             source: "minibar",
             status: "Pending",
             notes: notes || null,
-            guest_last_name: g.last_name ?? null, // requires column in orders
+            guest_last_name: g.last_name ?? null,
           },
         ])
         .select("id")
@@ -307,7 +290,7 @@ useEffect(() => {
       if (orderErr) throw orderErr;
       const orderId = order!.id as string;
 
-      // 2) order_items (snapshot)
+      // 2) Insert into order_items
       const itemsPayload = cart.map((l) => ({
         order_id: orderId,
         minibar_item: l.itemId,
@@ -316,42 +299,36 @@ useEffect(() => {
         quantity: l.quantity,
         line_total: l.price * l.quantity,
       }));
-
       const { error: itemsErr } = await supabase.from("order_items").insert(itemsPayload);
       if (itemsErr) throw itemsErr;
 
-      // 3) update local stock
-      const updatedMenu = freshMenu.map((m) => {
-        const line = cart.find((x) => x.itemId === m.id);
-        if (!line) return m;
-        return { ...m, stockQuantity: Math.max(0, m.stockQuantity - line.quantity) };
-      });
-      saveItems(updatedMenu);
-      setMenu(
-        updatedMenu
-          .filter((i) => i.isVisible && i.stockQuantity > 0)
-          .sort((a, b) => a.name.localeCompare(b.name))
-      );
+      // 3) Decrement stock in DB
+      for (const line of cart) {
+        await supabase.rpc("decrement_minibar_stock", {
+          p_item_id: line.itemId,
+          p_qty: line.quantity,
+        });
+      }
 
       setPlacedOrderId(orderId);
       setCart([]);
       setStep("done");
     } catch (err: any) {
+      console.error(err);
       setError(err.message ?? "Failed to place order.");
     } finally {
       setPlacing(false);
     }
   };
 
-  /* -------------------------------- UI --------------------------------- */
+  /* ------------------------------------------------------------------ */
+  /* UI: Confirmation Page                                              */
+  /* ------------------------------------------------------------------ */
 
-  // ✅ Confirmation page
   if (step === "done") {
     return (
       <div className="relative min-h-screen bg-[#1d1d1d] p-6 flex items-center justify-center overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-yellow-100/5 via-transparent to-indigo-200/10 pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.05),transparent_70%)] pointer-events-none" />
-
         <Card className="relative max-w-xl w-full shadow-lg border border-white/5 bg-[#232323]/80 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-white text-xl font-semibold">
@@ -362,16 +339,14 @@ useEffect(() => {
           <CardContent className="space-y-3 text-gray-100">
             <p>
               Thank you{" "}
-              <span className="font-semibold">{guest?.first_name ?? ""}</span>! Your
-              minibar request was submitted.
+              <span className="font-semibold">{guest?.first_name ?? ""}</span>! Your minibar request was submitted.
             </p>
-           <p className="text-sm text-gray-400">
-  Order ID:&nbsp;
-  <span className="font-mono text-gray-300 tracking-wide">
-    {placedOrderId?.slice(0, 8).toUpperCase()}
-  </span>
-</p>
-
+            <p className="text-sm text-gray-400">
+              Order ID:&nbsp;
+              <span className="font-mono text-gray-300 tracking-wide">
+                {placedOrderId?.slice(0, 8).toUpperCase()}
+              </span>
+            </p>
             <Button className="mt-2" onClick={() => window.location.reload()}>
               Place another order
             </Button>
@@ -381,12 +356,12 @@ useEffect(() => {
     );
   }
 
-  // ✅ Order page (guests build cart first)
+  /* ------------------------------------------------------------------ */
+  /* UI: Order Page                                                     */
+  /* ------------------------------------------------------------------ */
+
   return (
     <div className="relative min-h-screen bg-[#1d1d1d] text-gray-100 p-4 md:p-6 overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-yellow-100/15 via-transparent to-indigo-200/15 pointer-events-none" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.04),transparent_70%)] pointer-events-none" />
-
       <div className="relative mx-auto max-w-6xl">
         <div className="mb-4 flex items-center justify-between">
           <div>
@@ -397,12 +372,10 @@ useEffect(() => {
                 : "Build your cart, then confirm your stay at checkout."}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="gap-1">
-              <IconShoppingCart className="size-4" />
-              {cart.reduce((sum, l) => sum + l.quantity, 0)}
-            </Badge>
-          </div>
+          <Badge variant="secondary" className="gap-1">
+            <IconShoppingCart className="size-4" />
+            {cart.reduce((sum, l) => sum + l.quantity, 0)}
+          </Badge>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -412,44 +385,28 @@ useEffect(() => {
               <CardTitle>Available items</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Filters */}
-              <div className="sticky top-0 z-10 -mx-4 md:mx-0 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70 border-b">
-                <div className="px-4 py-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                  <div className="overflow-x-auto no-scrollbar">
-                    <div className="flex items-center gap-2 whitespace-nowrap">
-                      {categories.map((cat) => {
-                        const count =
-                          cat === "All"
-                            ? menu.length
-                            : menu.filter((m) => m.category === cat).length;
-                        const active = selectedCat === cat;
-                        return (
-                          <button
-                            key={cat}
-                            onClick={() => setSelectedCat(cat)}
-                            className={[
-                              "rounded-full px-3 py-1 text-sm border transition-colors",
-                              active
-                                ? "bg-primary text-primary-foreground border-primary"
-                                : "bg-background hover:bg-muted border-muted-foreground/20",
-                            ].join(" ")}
-                          >
-                            {cat} <span className="opacity-70">({count})</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+              <div className="flex items-center justify-between">
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((cat) => (
+                    <Button
+                      key={cat}
+                      variant={selectedCat === cat ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedCat(cat)}
+                    >
+                      {cat}
+                    </Button>
+                  ))}
+                </div>
 
-                  <div className="relative w-full md:w-64">
-                    <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                    <Input
-                      className="pl-9"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Search items…"
-                    />
-                  </div>
+                <div className="relative w-64">
+                  <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    className="pl-9"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search items…"
+                  />
                 </div>
               </div>
 
@@ -464,11 +421,7 @@ useEffect(() => {
                   const inCart = cart.find((c) => c.itemId === m.id);
                   const remaining = m.stockQuantity - (inCart?.quantity ?? 0);
                   return (
-                    <div
-                      key={m.id}
-                      className="rounded-lg border bg-white p-4 flex gap-4 items-start shadow-sm"
-                    >
-                      {/* Image */}
+                    <div key={m.id} className="rounded-lg border bg-white p-4 flex gap-4 items-start shadow-sm">
                       <div className="w-20 h-20 flex-shrink-0 overflow-hidden rounded-md bg-muted">
                         {m.imageUrl ? (
                           <img
@@ -484,7 +437,6 @@ useEffect(() => {
                         )}
                       </div>
 
-                      {/* Text */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <div className="font-medium truncate">{m.name}</div>
@@ -506,20 +458,12 @@ useEffect(() => {
                           {m.calories != null && (
                             <Badge variant="outline">{m.calories} cal</Badge>
                           )}
-                          {m.allergicDetails && (
-                            <Badge variant="outline">Allergens</Badge>
-                          )}
+                          {m.allergicDetails && <Badge variant="outline">Allergens</Badge>}
                         </div>
                       </div>
 
-                      {/* Actions */}
                       <div className="flex flex-col gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => addToCart(m)}
-                          disabled={remaining <= 0}
-                          title={remaining <= 0 ? "Out of stock" : "Add to cart"}
-                        >
+                        <Button size="sm" onClick={() => addToCart(m)} disabled={remaining <= 0}>
                           Add
                         </Button>
                         <Button
@@ -527,7 +471,6 @@ useEffect(() => {
                           variant="outline"
                           onClick={() => decFromCart(m.id)}
                           disabled={!inCart}
-                          title={!inCart ? "Not in cart" : "Remove one"}
                         >
                           Remove
                         </Button>
@@ -546,16 +489,11 @@ useEffect(() => {
             </CardHeader>
             <CardContent className="space-y-4">
               {cart.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Your cart is empty.
-                </p>
+                <p className="text-sm text-muted-foreground">Your cart is empty.</p>
               ) : (
                 <div className="space-y-3">
                   {cart.map((l) => (
-                    <div
-                      key={l.itemId}
-                      className="flex items-center justify-between gap-3"
-                    >
+                    <div key={l.itemId} className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <div className="font-medium truncate">{l.name}</div>
                         <div className="text-sm text-muted-foreground">
@@ -563,11 +501,7 @@ useEffect(() => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          onClick={() => decFromCart(l.itemId)}
-                        >
+                        <Button size="icon" variant="outline" onClick={() => decFromCart(l.itemId)}>
                           −
                         </Button>
                         <span className="w-6 text-center">{l.quantity}</span>
@@ -575,8 +509,7 @@ useEffect(() => {
                           size="icon"
                           onClick={() => {
                             const m = menu.find((x) => x.id === l.itemId);
-                            if (!m) return;
-                            addToCart(m);
+                            if (m) addToCart(m);
                           }}
                         >
                           +
@@ -593,7 +526,6 @@ useEffect(() => {
                   ))}
 
                   <Separator />
-
                   <div className="space-y-2">
                     <Label htmlFor="notes">Notes (optional)</Label>
                     <Textarea
@@ -603,7 +535,6 @@ useEffect(() => {
                       placeholder="Anything we should know?"
                     />
                   </div>
-
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-muted-foreground">Total</div>
                     <div className="text-lg font-semibold">{total}</div>
@@ -623,7 +554,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Confirmation dialog */}
+      {/* Confirmation Dialog */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
