@@ -10,6 +10,12 @@ $lines = @('127.0.0.1 in-evan.com','127.0.0.1 admin.in-evan.com'); $hosts = "$en
 - git init
 - git add .
 - git push .
+# git remote
+- git remote -v
+- git remote add origin https://github.com/cypher0011/in-evan
+- git add .
+- git commit -m "<anything here>"
+- git push
 # npm config
 - npm -v
 - npm install
@@ -31,6 +37,7 @@ $lines = @('127.0.0.1 in-evan.com','127.0.0.1 admin.in-evan.com'); $hosts = "$en
 # Database & ORM
 - Supabase
 - Prisma
+- AWS S3
 
 # APIs
 - unkey
