@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
   if (host === adminDomain || host === `admin.in-evan.com${port}`) {
     // Create Supabase client for authentication check
     const supabase = createServerClient(
-      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_DATABASE_URL!,
       process.env.SUPABASE_ANON_KEY!,
       {
         cookies: {

@@ -1,7 +1,7 @@
 "use client";
 
 export default function EnvTestPage() {
-  console.log("✅ Supabase URL:", process.env.SUPABASE_URL);
+  console.log("✅ Supabase URL:", process.env.SUPABASE_DATABASE_URL);
   console.log("✅ Supabase Key:", process.env.SUPABASE_ANON_KEY?.slice(0, 10) + "..."); // only show part for safety
 
   return (
