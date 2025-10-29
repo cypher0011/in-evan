@@ -259,7 +259,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       const { data: { user: authUser } } = await supabase.auth.getUser()
 
       if (authUser) {
-        // Extract name from email (e.g., "movenpick@in-evan.com" -> "movenpick")
+        // Extract name from email (e.g., "movenpick@in-evan.site" -> "movenpick")
         const name = authUser.email?.split('@')[0] || "Guest"
         setUser({
           name: name.charAt(0).toUpperCase() + name.slice(1),

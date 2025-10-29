@@ -6,8 +6,8 @@ export async function middleware(request: NextRequest) {
   const url = request.nextUrl.clone();
   const host = request.headers.get('host') || '';
 
-  const mainDomain = 'in-evan.com';
-  const adminDomain = 'admin.in-evan.com';
+  const mainDomain = 'in-evan.site';
+  const adminDomain = 'admin.in-evan.site';
 
   // Get port for local development
   const port = url.port ? `:${url.port}` : '';
@@ -30,7 +30,7 @@ export async function middleware(request: NextRequest) {
   let response = NextResponse.next();
 
   // Handle admin subdomain routing
-  if (host === adminDomain || host === `admin.in-evan.com${port}`) {
+  if (host === adminDomain || host === `admin.in-evan.site${port}`) {
     // Create Supabase client for authentication check
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_DATABASE_URL!,
@@ -92,7 +92,7 @@ export async function middleware(request: NextRequest) {
   // Handle main domain routing
   if (
     host === mainDomain ||
-    host === `in-evan.com${port}` ||
+    host === `in-evan.site${port}` ||
     host.startsWith('localhost')
   ) {
     if (!isAlreadyRewritten) {

@@ -1,9 +1,9 @@
 # local device name
 <!-- mac -->
-sudo bash -c 'grep -qxF "127.0.0.1 in-evan.com" /etc/hosts || echo "127.0.0.1 in-evan.com" >> /etc/hosts; grep -qxF "127.0.0.1 admin.in-evan.com" /etc/hosts || echo "127.0.0.1 admin.in-evan.com" >> /etc/hosts'
+sudo bash -c 'grep -qxF "127.0.0.1 in-evan.site" /etc/hosts || echo "127.0.0.1 in-evan.site" >> /etc/hosts; grep -qxF "127.0.0.1 admin.in-evan.site" /etc/hosts || echo "127.0.0.1 admin.in-evan.site" >> /etc/hosts'
 
 <!-- windows -->
-$lines = @('127.0.0.1 in-evan.com','127.0.0.1 admin.in-evan.com'); $hosts = "$env:SystemRoot\System32\drivers\etc\hosts"; foreach($l in $lines){ if (-not (Select-String -Path $hosts -Pattern ([regex]::Escape($l)) -SimpleMatch -Quiet)) { Add-Content -Path $hosts -Value $l } }
+$lines = @('127.0.0.1 in-evan.site','127.0.0.1 admin.in-evan.site'); $hosts = "$env:SystemRoot\System32\drivers\etc\hosts"; foreach($l in $lines){ if (-not (Select-String -Path $hosts -Pattern ([regex]::Escape($l)) -SimpleMatch -Quiet)) { Add-Content -Path $hosts -Value $l } }
 
 
 # git config local
