@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing BUCKET_NAME" }, { status: 500 });
   }
 
-  const region = process.env.AWS_REGIO ?? process.env.BUCKET_REGION ?? "eu-north-1";
+  const region = process.env.MY_AWS_REGION ?? process.env.BUCKET_REGION ?? "eu-north-1";
 
   try {
     const formData = await req.formData();
