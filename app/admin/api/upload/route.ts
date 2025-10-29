@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3 } from "@/lib/s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -15,6 +14,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing BUCKET_NAME" }, { status: 500 });
   }
 
+  const region = process.env.AWS_REGIO ?? process.env.BUCKET_REGION ?? "eu-north-1";
+
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -24,28 +25,24 @@ export async function POST(req: Request) {
     const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
     const key = `uploads/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
-    // ⬇️ NO ACL here
+    // Upload to S3 (bucket policy will control public access)
     await s3.send(
       new PutObjectCommand({
         Bucket: process.env.BUCKET_NAME!,
         Key: key,
         Body: bytes,
         ContentType: file.type || "application/octet-stream",
-        CacheControl: "31536000",
+        CacheControl: "public, max-age=31536000, immutable",
       })
     );
 
-    // Pre-signed (temporary) URL for reading the object
-    const signedUrl = await getSignedUrl(
-      s3,
-      new GetObjectCommand({
-        Bucket: process.env.BUCKET_NAME!,
-        Key: key,
-      }),
-      { expiresIn: 60 * 60 } // 1 hour
-    );
+    // Return permanent public URL (no expiration)
+    // Use the regional endpoint format: https://s3.region.amazonaws.com/bucket/key
+    const publicUrl = `https://s3.${region}.amazonaws.com/${process.env.BUCKET_NAME}/${key}`;
 
-    return NextResponse.json({ url: signedUrl, key });
+    console.log("Upload successful:", { publicUrl, key });
+
+    return NextResponse.json({ url: publicUrl, key });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || "Upload failed" }, { status: 500 });
   }

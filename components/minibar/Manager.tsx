@@ -138,6 +138,8 @@ export default function MiniBarManager() {
     image_url: "",
   });
 
+  const [uploadingImage, setUploadingImage] = React.useState(false);
+
   // ---------- CRUD helpers ----------
 
   const fetchItems = React.useCallback(async () => {
@@ -269,46 +271,59 @@ export default function MiniBarManager() {
     }
   };
 
-  // Upload image to Supabase Storage (bucket: minibar)
-  // Upload image to Supabase Storage (bucket: minibar)
-const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+  // Upload image to S3
+  const handleImageUpload = React.useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-  setErr(null);
+    setErr(null);
 
-  if (!file.type.startsWith("image/")) {
-    setErr("Please select an image file.");
-    return;
-  }
+    if (!file.type.startsWith("image/")) {
+      setErr("Please select an image file.");
+      return;
+    }
 
-  if (file.size > 5 * 1024 * 1024) {
-    setErr("Image too large (max 5MB).");
-    return;
-  }
+    if (file.size > 5 * 1024 * 1024) {
+      setErr("Image too large (max 5MB).");
+      return;
+    }
 
-  const formData = new FormData();
-  formData.append("file", file);
+    setUploadingImage(true);
 
-  const res = await fetch("/admin/api/upload", {
-  method: "POST",
-  body: formData,
-});
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
 
+      const res = await fetch("/admin/api/upload", {
+        method: "POST",
+        body: formData,
+      });
 
+      const ct = res.headers.get("content-type") || "";
+      const data = ct.includes("application/json")
+        ? await res.json()
+        : { error: await res.text() };
 
-  const ct = res.headers.get("content-type") || "";
-  const data = ct.includes("application/json")
-    ? await res.json()
-    : { error: await res.text() };
+      console.log("Upload response:", { status: res.ok, data });
 
-  if (!res.ok) {
-    setErr(data.error || "Upload failed");
-    return;
-  }
+      if (!res.ok) {
+        setErr(data.error || "Upload failed");
+        return;
+      }
 
-  setFormData((p) => ({ ...p, image_url: data.url }));
-};
+      if (!data.url) {
+        setErr("No URL returned from upload");
+        return;
+      }
+
+      console.log("Setting image URL:", data.url);
+      setFormData((p) => ({ ...p, image_url: data.url }));
+    } catch (error: any) {
+      setErr(error?.message || "Upload failed");
+    } finally {
+      setUploadingImage(false);
+    }
+  }, []);
 
 
   // ---------- table columns ----------
@@ -775,15 +790,44 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 
             <div className="space-y-2">
               <Label htmlFor="image">Image</Label>
-              <Input id="image" type="file" accept="image/*" onChange={handleImageUpload} />
-              {formData.image_url && (
-                <div className="mt-2">
+              <Input
+                id="image"
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                disabled={uploadingImage}
+              />
+              {uploadingImage && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
+                  Uploading image, please wait...
+                </div>
+              )}
+              {formData.image_url && !uploadingImage && (
+                <div className="mt-2 flex items-center gap-3">
                   <img
                     src={formData.image_url}
                     alt="Preview"
                     className="h-20 w-20 rounded object-cover border"
+                    onError={(e) => {
+                      console.error("Image failed to load:", formData.image_url);
+                      setErr("Failed to load image. Check if URL is accessible.");
+                    }}
+                    onLoad={() => console.log("Image loaded successfully:", formData.image_url)}
                   />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFormData((p) => ({ ...p, image_url: "" }))}
+                    className="text-destructive"
+                  >
+                    Remove
+                  </Button>
                 </div>
+              )}
+              {!uploadingImage && formData.image_url && (
+                <p className="text-xs text-muted-foreground">Preview URL: {formData.image_url}</p>
               )}
             </div>
 
@@ -802,7 +846,13 @@ const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit">{editingItem ? "Save Changes" : "Add Item"}</Button>
+              <Button type="submit" disabled={uploadingImage}>
+                {uploadingImage
+                  ? "Uploading..."
+                  : editingItem
+                  ? "Save Changes"
+                  : "Add Item"}
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
