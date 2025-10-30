@@ -27,6 +27,10 @@ type FormData = {
   specialRequests: string;
 };
 
+type FormErrors = {
+  [K in keyof FormData]?: string;
+};
+
 // Animation variants
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -64,7 +68,7 @@ export default function GuestInformationView({
     specialRequests: '',
   });
 
-  const [errors, setErrors] = useState<Partial<FormData>>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -78,7 +82,7 @@ export default function GuestInformationView({
   };
 
   const validateForm = (): boolean => {
-    const newErrors: Partial<FormData> = {};
+    const newErrors: FormErrors = {};
 
     if (!formData.dateOfBirth) {
       newErrors.dateOfBirth = 'Date of birth is required';
