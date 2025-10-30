@@ -1,9 +1,9 @@
 # local device name
 <!-- mac -->
-sudo bash -c 'grep -qxF "127.0.0.1 in-evan.site" /etc/hosts || echo "127.0.0.1 in-evan.site" >> /etc/hosts; grep -qxF "127.0.0.1 admin.in-evan.site" /etc/hosts || echo "127.0.0.1 admin.in-evan.site" >> /etc/hosts'
+sudo bash -c 'grep -qxF "127.0.0.1 in-evan.com" /etc/hosts || echo "127.0.0.1 in-evan.com" >> /etc/hosts; grep -qxF "127.0.0.1 admin.in-evan.com" /etc/hosts || echo "127.0.0.1 admin.in-evan.com" >> /etc/hosts'
 
 <!-- windows -->
-$lines = @('127.0.0.1 in-evan.site','127.0.0.1 admin.in-evan.site'); $hosts = "$env:SystemRoot\System32\drivers\etc\hosts"; foreach($l in $lines){ if (-not (Select-String -Path $hosts -Pattern ([regex]::Escape($l)) -SimpleMatch -Quiet)) { Add-Content -Path $hosts -Value $l } }
+$lines = @('127.0.0.1 in-evan.com','127.0.0.1 admin.in-evan.com'); $hosts = "$env:SystemRoot\System32\drivers\etc\hosts"; foreach($l in $lines){ if (-not (Select-String -Path $hosts -Pattern ([regex]::Escape($l)) -SimpleMatch -Quiet)) { Add-Content -Path $hosts -Value $l } }
 
 
 # git config local
@@ -35,8 +35,8 @@ $lines = @('127.0.0.1 in-evan.site','127.0.0.1 admin.in-evan.site'); $hosts = "$
 - Next.js
 
 # Database & ORM
-- Supabase
-- Prisma
+- Prisma 
+- Supabase & Supabase cli
 - AWS S3
 
 # APIs
@@ -53,3 +53,7 @@ $lines = @('127.0.0.1 in-evan.site','127.0.0.1 admin.in-evan.site'); $hosts = "$
 # Ui components
 - shadcn
 <!-- - launchuicomponents -->
+
+### commands for help
+- npm run prisma:studio 
++ show full status of what inside the db of supabase

@@ -64,7 +64,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { supabase } from "@/lib/supabase/supabase";
+// Removed Supabase import - now using API route
 
 /* ────────────────────────────────────────────────────────────────────────── */
 /* Types based on your Supabase `guests` table                               */
@@ -111,15 +111,17 @@ export default function GuestsPage() {
 
   React.useEffect(() => {
     const fetchGuests = async () => {
-      const { data, error } = await supabase
-        .from("guests")
-        .select(
-          "id, first_name, last_name, room_number, phone, email, status, created_at"
-        )
-        .order("created_at", { ascending: false });
-
-      if (!error && data) setData(data as GuestRow[]);
-      // If needed, handle error UI here
+      try {
+        const response = await fetch('/api/admin/guests');
+        if (response.ok) {
+          const data = await response.json();
+          setData(data as GuestRow[]);
+        } else {
+          console.error('Failed to fetch guests');
+        }
+      } catch (error) {
+        console.error('Error fetching guests:', error);
+      }
     };
     fetchGuests();
   }, []);

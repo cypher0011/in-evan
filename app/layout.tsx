@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import "./admin/globals.css";
 import "@emran-alhaddad/saudi-riyal-font/index.css";
 import { Toaster } from "sonner";
 
@@ -15,14 +15,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Evan Admin - Hotel Management",
-  description: "Admin panel for hotel management",
+  title: "In-Evan Hotel Management",
+  description: "Multi-tenant hotel check-in and management system",
 };
 
-export default function AdminLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <>{children}</>;
+  return (
+    <html lang="en">
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        {children}
+        <Toaster richColors position="top-right" />
+      </body>
+    </html>
+  );
 }

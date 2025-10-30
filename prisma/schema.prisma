@@ -1,0 +1,311 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Hotel {
+  id                 String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  subdomain          String              @unique
+  name               String
+  logoUrl            String?             @map("logo_url")
+  status             String              @default("active")
+  settings           Json?               @default("{}")
+  createdAt          DateTime            @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  bookings           Booking[]
+  deliveredOrders    DeliveredOrder[]
+  enhanceStayOptions EnhanceStayOption[]
+  sessions           GuestSession[]
+  tokens             GuestToken[]
+  guests             Guest[]
+  admins             HotelAdmin[]
+  settings_          HotelSettings?
+  minibarItems       MinibarItem[]
+  orders             Order[]
+
+  @@index([status], map: "idx_hotels_status")
+  @@index([subdomain], map: "idx_hotels_subdomain")
+  @@map("hotels")
+}
+
+model HotelAdmin {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hotelId      String    @map("hotel_id") @db.Uuid
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  role         String    @default("staff")
+  firstName    String?   @map("first_name")
+  lastName     String?   @map("last_name")
+  status       String    @default("active")
+  lastLoginAt  DateTime? @map("last_login_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  hotel        Hotel     @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([email], map: "idx_hotel_admins_email")
+  @@index([hotelId], map: "idx_hotel_admins_hotel_id")
+  @@map("hotel_admins")
+}
+
+model Guest {
+  id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  firstName   String         @map("first_name")
+  lastName    String         @map("last_name")
+  roomNumber  String         @map("room_number")
+  phone       String
+  email       String?
+  status      String
+  createdAt   DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  hotelId     String?        @map("hotel_id") @db.Uuid
+  dateOfBirth DateTime?      @map("date_of_birth") @db.Date
+  nationality String?
+  iqama       String?
+  passport    String?
+  nationalId  String?        @map("national_id")
+  preferences Json?          @default("{}")
+  updatedAt   DateTime?      @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  bookings    Booking[]
+  sessions    GuestSession[]
+  tokens      GuestToken[]
+  hotel       Hotel?         @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  orders      Order[]
+
+  @@index([hotelId], map: "idx_guests_hotel_id")
+  @@index([firstName, phone], map: "idx_guests_identity")
+  @@index([phone], map: "idx_guests_phone")
+  @@map("guests")
+}
+
+model GuestToken {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  token        String    @unique
+  guestId      String    @map("guest_id") @db.Uuid
+  hotelId      String    @map("hotel_id") @db.Uuid
+  checkInDate  DateTime  @map("check_in_date") @db.Date
+  checkOutDate DateTime  @map("check_out_date") @db.Date
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(6)
+  status       String    @default("active")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  usedAt       DateTime? @map("used_at") @db.Timestamptz(6)
+  bookings     Booking[]
+  guest        Guest     @relation(fields: [guestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  hotel        Hotel     @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([guestId, hotelId, status], map: "unique_guest_hotel_active")
+  @@index([hotelId, guestId], map: "idx_guest_tokens_hotel_guest")
+  @@index([status], map: "idx_guest_tokens_status")
+  @@index([token], map: "idx_guest_tokens_token")
+  @@map("guest_tokens")
+}
+
+model Booking {
+  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  guestId            String               @map("guest_id") @db.Uuid
+  hotelId            String               @map("hotel_id") @db.Uuid
+  tokenId            String?              @map("token_id") @db.Uuid
+  roomNumber         String               @map("room_number")
+  roomType           String?              @map("room_type")
+  checkInDate        DateTime             @map("check_in_date") @db.Date
+  checkOutDate       DateTime             @map("check_out_date") @db.Date
+  numberOfGuests     Int?                 @default(1) @map("number_of_guests")
+  bookingSource      String?              @map("booking_source")
+  bookingReference   String?              @map("booking_reference")
+  baseAmount         Decimal?             @default(0) @map("base_amount") @db.Decimal(10, 2)
+  enhancementsAmount Decimal?             @default(0) @map("enhancements_amount") @db.Decimal(10, 2)
+  totalAmount        Decimal?             @default(dbgenerated("(base_amount + enhancements_amount)")) @map("total_amount") @db.Decimal(10, 2)
+  status             String               @default("pending")
+  notes              String?
+  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  enhancements       BookingEnhancement[]
+  guest              Guest                @relation(fields: [guestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  hotel              Hotel                @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  token              GuestToken?          @relation(fields: [tokenId], references: [id], onUpdate: NoAction)
+  deliveredOrders    DeliveredOrder[]
+  sessions           GuestSession[]
+  orders             Order[]
+
+  @@index([checkInDate, checkOutDate], map: "idx_bookings_dates")
+  @@index([guestId], map: "idx_bookings_guest_id")
+  @@index([hotelId], map: "idx_bookings_hotel_id")
+  @@index([status], map: "idx_bookings_status")
+  @@index([tokenId], map: "idx_bookings_token_id")
+  @@map("bookings")
+}
+
+model EnhanceStayOption {
+  id                    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hotelId               String               @map("hotel_id") @db.Uuid
+  name                  String
+  description           String?
+  category              String
+  price                 Decimal              @db.Decimal(10, 2)
+  imageUrl              String?              @map("image_url")
+  requiresCustomization Boolean?             @default(false) @map("requires_customization")
+  customizationSchema   Json?                @map("customization_schema")
+  isVisible             Boolean?             @default(true) @map("is_visible")
+  displayOrder          Int?                 @default(0) @map("display_order")
+  createdAt             DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  enhancements          BookingEnhancement[]
+  hotel                 Hotel                @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([category], map: "idx_enhance_stay_category")
+  @@index([hotelId], map: "idx_enhance_stay_hotel_id")
+  @@map("enhance_stay_options")
+}
+
+model BookingEnhancement {
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  bookingId     String            @map("booking_id") @db.Uuid
+  optionId      String            @map("option_id") @db.Uuid
+  quantity      Int?              @default(1)
+  priceSnapshot Decimal           @map("price_snapshot") @db.Decimal(10, 2)
+  customization Json?             @default("{}")
+  status        String            @default("pending")
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime          @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  booking       Booking           @relation(fields: [bookingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  option        EnhanceStayOption @relation(fields: [optionId], references: [id], onUpdate: NoAction)
+
+  @@index([bookingId], map: "idx_booking_enhancements_booking_id")
+  @@index([optionId], map: "idx_booking_enhancements_option_id")
+  @@map("booking_enhancements")
+}
+
+model GuestSession {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionToken   String   @unique @map("session_token")
+  guestId        String   @map("guest_id") @db.Uuid
+  hotelId        String   @map("hotel_id") @db.Uuid
+  bookingId      String?  @map("booking_id") @db.Uuid
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz(6)
+  lastActivityAt DateTime @default(now()) @map("last_activity_at") @db.Timestamptz(6)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  booking        Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  guest          Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  hotel          Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([expiresAt], map: "idx_guest_sessions_expires_at")
+  @@index([guestId, hotelId], map: "idx_guest_sessions_guest")
+  @@index([sessionToken], map: "idx_guest_sessions_token")
+  @@map("guest_sessions")
+}
+
+model HotelSettings {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hotelId            String   @unique @map("hotel_id") @db.Uuid
+  themeConfig        Json?    @default("{}") @map("theme_config")
+  branding           Json?    @default("{}")
+  paymentConfig      Json?    @default("{}") @map("payment_config")
+  checkinFlowConfig  Json?    @default("{}") @map("checkin_flow_config")
+  minibarEnabled     Boolean? @default(true) @map("minibar_enabled")
+  enhanceStayEnabled Boolean? @default(true) @map("enhance_stay_enabled")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  hotel              Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([hotelId], map: "idx_hotel_settings_hotel_id")
+  @@map("hotel_settings")
+}
+
+model MinibarItem {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String
+  category        String
+  customCategory  String?   @map("custom_category")
+  price           Decimal   @db.Decimal
+  description     String?
+  allergicDetails String?   @map("allergic_details")
+  calories        Int?
+  stockQuantity   Int       @default(0) @map("stock_quantity")
+  isVisible       Boolean   @default(true) @map("is_visible")
+  imageUrl        String?   @map("image_url")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  hotelId         String?   @map("hotel_id") @db.Uuid
+  updatedAt       DateTime? @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  hotel           Hotel?    @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([category], map: "idx_minibar_items_category")
+  @@index([hotelId], map: "idx_minibar_items_hotel_id")
+  @@index([isVisible], map: "idx_minibar_items_visible")
+  @@map("minibar_items")
+}
+
+model Order {
+  id            String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  guestId       String      @map("guest_id") @db.Uuid
+  roomNumber    String?     @map("room_number")
+  source        String?     @default("'minibar'")
+  status        String?
+  notes         String?
+  createdAt     DateTime?   @default(now()) @map("created_at") @db.Timestamptz(6)
+  guestLastName String?     @map("guest_last_name")
+  hotelId       String?     @map("hotel_id") @db.Uuid
+  bookingId     String?     @map("booking_id") @db.Uuid
+  updatedAt     DateTime?   @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  items         OrderItem[]
+  booking       Booking?    @relation(fields: [bookingId], references: [id], onUpdate: NoAction)
+  guest         Guest       @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  hotel         Hotel?      @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([bookingId], map: "idx_orders_booking_id")
+  @@index([hotelId], map: "idx_orders_hotel_id")
+  @@map("orders")
+}
+
+model OrderItem {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId            String    @map("order_id") @db.Uuid
+  minibarItemLocalId String?   @map("minibar_item_local_id")
+  nameSnapshot       String?   @map("name_snapshot")
+  priceSnapshot      Decimal?  @map("price_snapshot") @db.Decimal
+  quantity           Int?
+  lineTotal          Decimal?  @map("line_total") @db.Decimal
+  createdAt          DateTime? @default(now()) @map("created_at") @db.Timestamptz(6)
+  minibarItem        String?   @map("minibar_item")
+  order              Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_items")
+}
+
+model DeliveredOrder {
+  id            String               @id @db.Uuid
+  guestId       String               @map("guest_id") @db.Uuid
+  roomNumber    String               @map("room_number")
+  source        String
+  status        String
+  notes         String?
+  createdAt     DateTime             @map("created_at") @db.Timestamptz(6)
+  deliveredAt   DateTime             @default(now()) @map("delivered_at") @db.Timestamptz(6)
+  guestLastName String?              @map("guest_last_name")
+  hotelId       String?              @map("hotel_id") @db.Uuid
+  bookingId     String?              @map("booking_id") @db.Uuid
+  updatedAt     DateTime?            @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  items         DeliveredOrderItem[]
+  booking       Booking?             @relation(fields: [bookingId], references: [id], onUpdate: NoAction)
+  hotel         Hotel?               @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([bookingId], map: "idx_delivered_orders_booking_id")
+  @@index([hotelId], map: "idx_delivered_orders_hotel_id")
+  @@map("delivered_orders")
+}
+
+model DeliveredOrderItem {
+  id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId       String         @map("order_id") @db.Uuid
+  minibarItem   String?        @map("minibar_item")
+  nameSnapshot  String         @map("name_snapshot")
+  priceSnapshot Decimal        @map("price_snapshot") @db.Decimal
+  quantity      Int
+  lineTotal     Decimal        @map("line_total") @db.Decimal
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+  order         DeliveredOrder @relation(fields: [orderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@map("delivered_order_items")
+}

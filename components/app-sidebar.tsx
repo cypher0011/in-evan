@@ -50,22 +50,22 @@ const data = {
     },
     // {
     //   title: "Add New Guest",
-    //   url: "/guests/",
+    //   url: "/admin/guests/",
     //   icon: IconUserPlus,
     // },
     {
       title: "Guests",
-      url: "/guests",
+      url: "/admin/guests",
       icon: IconUsers
     },
     {
       title: "check-in",
-      url: "/guests",
+      url: "/admin/guests",
       icon: IconUsers
     },
     {
       title: "Mini Bar",
-      url: "/Minibar",
+      url: "/admin/Minibar",
       icon: IconGlass,
       items: [
         {
@@ -84,14 +84,14 @@ const data = {
     },
    {
   title: "Order Details",
-  url: "/order-details",
+  url: "/admin/order-details",
   icon: IconDatabase
 },
 
 
     {
       title: "feedback",
-      url: "/feedback",
+      url: "/admin/feedback",
       icon: IconListDetails,
       items: [
         {
@@ -102,7 +102,7 @@ const data = {
     },
     {
       title: "guest app",
-      url: "/guest-app",
+      url: "/admin/guest-app",
       icon: IconCalendar,
       items: [
         {
@@ -171,7 +171,7 @@ const data = {
     // },
         {
       title: "Analysis",
-      url: "/analysis",
+      url: "/admin/analysis",
       icon: IconCloudDataConnectionFilled,
       items: [
         {
