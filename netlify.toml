@@ -1,0 +1,16 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["node_modules/@prisma/**", "prisma/**"]
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[build.environment]
+  # Ensure Prisma generates with correct binaries
+  PRISMA_GENERATE_SKIP_AUTOINSTALL = "false"
+  # Enable detailed logging for debugging
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
