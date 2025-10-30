@@ -10,7 +10,9 @@ import prisma from '@/lib/prisma';
  */
 export async function validateHotel(subdomain: string) {
   try {
-    const hotel = await prisma.hotel.findUnique({
+    // Use findFirst instead of findUnique because we filter by multiple fields
+    // (subdomain + status), and only subdomain has a unique constraint
+    const hotel = await prisma.hotel.findFirst({
       where: {
         subdomain,
         status: 'active',
