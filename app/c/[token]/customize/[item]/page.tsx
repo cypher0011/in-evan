@@ -1,4 +1,4 @@
-import { getHotelContext } from '@/lib/utils/hotel-context';
+import { getValidatedData } from '../../data';
 import Link from 'next/link';
 
 /**
@@ -13,19 +13,12 @@ export const dynamic = 'force-dynamic';
 export default async function CustomizeItemPage({
   params,
 }: {
-  params: Promise<{ token: string; item: string }>;
+  params: { token: string; item: string };
 }) {
-  const resolvedParams = await params;
-  const token = resolvedParams.token;
-  const item = resolvedParams.item || 'item';
+  const { token, item } = params;
+  const { hotel } = await getValidatedData(token);
 
-  const context = await getHotelContext();
-
-  if (!context) {
-    return <div>Error: Invalid hotel context</div>;
-  }
-
-  if (!item || !token) {
+  if (!item) {
     return <div>Error: Missing required parameters</div>;
   }
 
@@ -45,7 +38,7 @@ export default async function CustomizeItemPage({
 
         <div className="space-y-4">
           <p className="text-sm text-gray-500 text-center">
-            Token: {token} | Hotel: {context.subdomain}
+            Token: {token} | Hotel: {hotel.subdomain}
           </p>
           <p className="text-gray-600 text-center">
             Personalize your selection

@@ -19,6 +19,8 @@ import {
   IconFileExport,
   IconPlus,
   IconSearch,
+  IconCopy,
+  IconCheck,
 } from "@tabler/icons-react";
 import { format } from "date-fns";
 
@@ -77,6 +79,9 @@ type GuestRow = {
   email: string | null;
   status: "Confirmed" | "Checked In" | "Checked Out" | "Cancelled" | string;
   created_at: string | null;
+  token: string | null;
+  check_in_date: string | null;
+  check_out_date: string | null;
 };
 
 /* Badge variant helper to match your look */
@@ -100,6 +105,7 @@ export default function GuestsPage() {
     null
   );
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
+  const [copiedToken, setCopiedToken] = React.useState<string | null>(null);
 
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -129,6 +135,17 @@ export default function GuestsPage() {
   const handleViewDetails = (guest: GuestRow) => {
     setSelectedGuest(guest);
     setIsSheetOpen(true);
+  };
+
+  const copyToken = async (token: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row click
+    try {
+      await navigator.clipboard.writeText(token);
+      setCopiedToken(token);
+      setTimeout(() => setCopiedToken(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy token:', err);
+    }
   };
 
   const columns: ColumnDef<GuestRow>[] = [
@@ -199,16 +216,54 @@ export default function GuestsPage() {
       cell: ({ row }) => <StatusBadge status={row.original.status} />,
     },
     {
+      accessorKey: "token",
+      header: "Token",
+      cell: ({ row }) => {
+        const token = row.original.token;
+        if (!token) return <span className="text-muted-foreground text-sm">—</span>;
+
+        return (
+          <div className="flex items-center gap-2">
+            <code className="font-mono text-sm bg-muted px-2 py-1 rounded">
+              {token}
+            </code>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={(e) => copyToken(token, e)}
+                >
+                  {copiedToken === token ? (
+                    <IconCheck className="h-3.5 w-3.5 text-green-600" />
+                  ) : (
+                    <IconCopy className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {copiedToken === token ? "Copied!" : "Copy token"}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        );
+      },
+    },
+    {
       id: "dates",
       header: "Check-in / Check-out",
       cell: ({ row }) => {
-        const created = row.original.created_at
-          ? format(new Date(row.original.created_at), "LLL dd, yyyy")
+        const checkIn = row.original.check_in_date
+          ? format(new Date(row.original.check_in_date), "LLL dd, yyyy")
+          : "—";
+        const checkOut = row.original.check_out_date
+          ? format(new Date(row.original.check_out_date), "LLL dd, yyyy")
           : "—";
         return (
           <div>
-            <div className="font-medium">{created}</div>
-            <div className="text-sm text-muted-foreground">—</div>
+            <div className="font-medium">{checkIn}</div>
+            <div className="text-sm text-muted-foreground">{checkOut}</div>
           </div>
         );
       },
@@ -452,7 +507,34 @@ export default function GuestsPage() {
                 <Separator />
                 <div className="flex-1 overflow-y-auto p-6 space-y-6">
                   <div className="grid gap-3">
-                    <div className="text-sm text-muted-foreground">
+                    {selectedGuest.token && (
+                      <>
+                        <div className="text-sm text-muted-foreground">
+                          Check-in Token
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <code className="font-mono text-sm bg-muted px-3 py-1.5 rounded flex-1">
+                            {selectedGuest.token}
+                          </code>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={(e) => copyToken(selectedGuest.token!, e)}
+                          >
+                            {copiedToken === selectedGuest.token ? (
+                              <IconCheck className="h-4 w-4 mr-1" />
+                            ) : (
+                              <IconCopy className="h-4 w-4 mr-1" />
+                            )}
+                            {copiedToken === selectedGuest.token ? "Copied" : "Copy"}
+                          </Button>
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          Guest check-in URL: https://movenpick.in-evan.site/c/{selectedGuest.token}/welcome
+                        </div>
+                      </>
+                    )}
+                    <div className="text-sm text-muted-foreground mt-4">
                       Email
                     </div>
                     <div className="font-medium">
@@ -470,6 +552,26 @@ export default function GuestsPage() {
                     <div className="font-medium">
                       {selectedGuest.room_number}
                     </div>
+                    {selectedGuest.check_in_date && (
+                      <>
+                        <div className="text-sm text-muted-foreground mt-4">
+                          Check-in Date
+                        </div>
+                        <div className="font-medium">
+                          {format(new Date(selectedGuest.check_in_date), "E, LLL dd, yyyy")}
+                        </div>
+                      </>
+                    )}
+                    {selectedGuest.check_out_date && (
+                      <>
+                        <div className="text-sm text-muted-foreground mt-4">
+                          Check-out Date
+                        </div>
+                        <div className="font-medium">
+                          {format(new Date(selectedGuest.check_out_date), "E, LLL dd, yyyy")}
+                        </div>
+                      </>
+                    )}
                     <div className="text-sm text-muted-foreground mt-4">
                       Created
                     </div>

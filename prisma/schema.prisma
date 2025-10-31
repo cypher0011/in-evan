@@ -31,6 +31,7 @@ model Hotel {
 
   @@index([status], map: "idx_hotels_status")
   @@index([subdomain], map: "idx_hotels_subdomain")
+  @@index([subdomain, status], map: "idx_hotels_subdomain_status")
   @@map("hotels")
 }
 
@@ -101,6 +102,7 @@ model GuestToken {
   @@index([hotelId, guestId], map: "idx_guest_tokens_hotel_guest")
   @@index([status], map: "idx_guest_tokens_status")
   @@index([token], map: "idx_guest_tokens_token")
+  @@index([token, hotelId, status], map: "idx_guest_tokens_token_hotel_id_status")
   @@map("guest_tokens")
 }
 

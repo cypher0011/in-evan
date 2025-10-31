@@ -1,6 +1,4 @@
-import { getHotelContext } from '@/lib/utils/hotel-context';
-import { validateHotel, validateToken } from '@/lib/utils/validation';
-import { redirect, notFound } from 'next/navigation';
+import { getValidatedData } from '../data';
 import TermsView from './TermsView'; // The new client component
 
 export const dynamic = 'force-dynamic';
@@ -19,25 +17,14 @@ hello_world`;
 }
 
 type TermsPageProps = {
-  params: Promise<{
+  params: {
     token: string;
-  }>;
+  };
 };
 
 export default async function TermsPage({ params }: TermsPageProps) {
-  const { token } = await params;
-  const context = await getHotelContext();
-
-  if (!context) {
-    redirect('/error?message=Invalid hotel context');
-  }
-
-  // Validate hotel & token
-  const hotel = await validateHotel(context.subdomain);
-  if (!hotel) notFound();
-
-  const tokenData = await validateToken(token, hotel.id);
-  if (!tokenData) notFound();
+  const { token } = params;
+  const { hotel } = await getValidatedData(token);
 
   // Fetch the dynamic T&C text
   const termsText = await fetchHotelTerms(hotel.id);
