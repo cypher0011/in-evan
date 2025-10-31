@@ -10,6 +10,8 @@ import {
   Plus,
   Minus,
 } from 'lucide-react';
+import { useTranslations } from '@/lib/i18n/useTranslations';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 type Service = {
   id: string;
@@ -67,6 +69,7 @@ const modalVariants = {
 
 export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
   const router = useRouter();
+  const { t, locale, changeLanguage, isRTL } = useTranslations();
   const [showGiftPopup, setShowGiftPopup] = useState(true);
   const [selectedServices, setSelectedServices] = useState<Record<string, number>>({});
 
@@ -74,24 +77,24 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
   const services: Service[] = [
     {
       id: 'flowers',
-      name: 'Premium Flowers',
-      description: 'Beautiful fresh flower arrangement to brighten your room with elegance',
+      name: t('enhanceStay.premiumFlowers'),
+      description: t('enhanceStay.flowersDesc'),
       price: 150,
       image: '/flowers_item.jpeg',
       category: 'decoration',
     },
     {
       id: 'spa',
-      name: 'Spa & Wellness',
-      description: 'Relaxing spa treatment with aromatherapy and professional massage',
+      name: t('enhanceStay.spaWellness'),
+      description: t('enhanceStay.spaDesc'),
       price: 500,
       image: '/care_item.jpeg',
       category: 'wellness',
     },
     {
       id: 'transfer',
-      name: 'Airport Transfer',
-      description: 'Luxury car service to and from the airport with professional driver',
+      name: t('enhanceStay.airportTransfer'),
+      description: t('enhanceStay.transferDesc'),
       price: 300,
       image: '/pickfrom_airport.jpeg',
       category: 'transportation',
@@ -170,6 +173,11 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
       </div>
 
+      {/* Language Switcher - Always on the right */}
+      <div className="fixed top-6 right-6 z-20">
+        <LanguageSwitcher currentLanguage={locale} onLanguageChange={(language) => changeLanguage(language.code)} />
+      </div>
+
       {/* Gift Popup */}
       <AnimatePresence>
         {showGiftPopup && (
@@ -219,10 +227,10 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
               {/* Text */}
               <div className="text-center space-y-3">
                 <h2 className="text-3xl font-bold text-white">
-                  A Gift Awaits You!
+                  {t('enhanceStay.giftTitle')}
                 </h2>
                 <p className="text-white/80 text-lg leading-relaxed">
-                  Enhance your stay with our exclusive services and make your experience truly unforgettable
+                  {t('enhanceStay.giftMessage')}
                 </p>
               </div>
 
@@ -231,7 +239,7 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
                 onClick={() => setShowGiftPopup(false)}
                 className="mt-8 w-full bg-[#F3EFE9] text-gray-900 font-bold py-4 px-6 rounded-full hover:bg-[#E8E4DD] transition-all duration-300 hover:scale-[1.02] shadow-xl"
               >
-                Explore Services
+                {t('enhanceStay.exploreServices')}
               </button>
             </motion.div>
           </motion.div>
@@ -263,10 +271,10 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
         {/* Page Title */}
         <motion.div variants={itemVariants} className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-3">
-            ENHANCE YOUR STAY
+            {t('enhanceStay.title')}
           </h1>
           <p className="text-white/80 text-lg">
-            Select special services to make your experience unforgettable
+            {t('enhanceStay.subtitle')}
           </p>
         </motion.div>
 
@@ -318,7 +326,7 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
                     {/* Price & Controls */}
                     <div className="flex items-center justify-between">
                       <p className="text-2xl font-bold text-amber-300">
-                        {service.price} SAR
+                        {service.price} {t('enhanceStay.sar')}
                       </p>
 
                       {/* Add/Remove Quantity Controls */}
@@ -328,7 +336,7 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
                           className="h-10 px-4 bg-amber-400/20 hover:bg-amber-400 hover:text-black backdrop-blur-sm text-amber-300 font-semibold rounded-full border border-amber-400/50 transition-all duration-300 flex items-center gap-2"
                         >
                           <Plus className="w-4 h-4" />
-                          Add
+                          {t('enhanceStay.add')}
                         </button>
                       ) : (
                         <div className="flex items-center gap-2">
@@ -370,10 +378,10 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
           {totalItems > 0 && (
             <div className="text-white text-center mb-4">
               <p className="text-sm text-white/70">
-                {totalItems} service{totalItems !== 1 ? 's' : ''} selected
+                {t('enhanceStay.servicesSelected').replace('{{count}}', totalItems.toString())}
               </p>
               <p className="text-2xl font-bold text-amber-300">
-                Total: {totalPrice} SAR
+                {t('enhanceStay.total')}: {totalPrice} {t('enhanceStay.sar')}
               </p>
             </div>
           )}
@@ -384,13 +392,13 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
               onClick={handleSkip}
               className="flex-1 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white font-semibold py-4 px-6 rounded-full border border-white/30 transition-all duration-300"
             >
-              Skip for Now
+              {t('enhanceStay.skipForNow')}
             </button>
             <button
               onClick={handleContinue}
               className="flex-1 bg-[#F3EFE9] text-gray-900 font-bold py-4 px-6 rounded-full hover:bg-[#E8E4DD] transition-all duration-300 hover:scale-[1.02] shadow-xl"
             >
-              Continue
+              {t('enhanceStay.continue')}
             </button>
           </div>
         </div>

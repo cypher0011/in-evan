@@ -3,12 +3,14 @@
  * Uses Prisma for type-safe database access
  */
 
+import { cache } from 'react';
 import prisma from '@/lib/prisma';
 
 /**
  * Validate hotel subdomain exists in database
+ * Cached to avoid duplicate database queries in the same request
  */
-export async function validateHotel(subdomain: string) {
+export const validateHotel = cache(async (subdomain: string) => {
   try {
     // Use findFirst instead of findUnique because we filter by multiple fields
     // (subdomain + status), and only subdomain has a unique constraint
@@ -30,12 +32,13 @@ export async function validateHotel(subdomain: string) {
     console.error('[validateHotel] Error:', error);
     return null;
   }
-}
+});
 
 /**
  * Validate guest token exists, is active, and belongs to the hotel
+ * Cached to avoid duplicate database queries in the same request
  */
-export async function validateToken(token: string, hotelId: string) {
+export const validateToken = cache(async (token: string, hotelId: string) => {
   try {
     const tokenData = await prisma.guestToken.findFirst({
       where: {
@@ -84,12 +87,13 @@ export async function validateToken(token: string, hotelId: string) {
     console.error('[validateToken] Error:', error);
     return null;
   }
-}
+});
 
 /**
  * Validate session token
+ * Cached to avoid duplicate database queries in the same request
  */
-export async function validateSession(sessionToken: string, hotelId: string) {
+export const validateSession = cache(async (sessionToken: string, hotelId: string) => {
   try {
     const session = await prisma.guestSession.findUnique({
       where: {
@@ -124,4 +128,4 @@ export async function validateSession(sessionToken: string, hotelId: string) {
     console.error('[validateSession] Error:', error);
     return null;
   }
-}
+});

@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Calendar, Users, Moon, Sparkles } from 'lucide-react';
+import { useTranslations } from '@/lib/i18n/useTranslations';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 type BookingData = {
   bookingId: string;
@@ -49,6 +51,7 @@ export default function BookingDetailsView({
   booking,
 }: BookingDetailsViewProps) {
   const router = useRouter();
+  const { t, locale, changeLanguage, isRTL } = useTranslations();
 
   const handleContinue = () => {
     router.push(`/c/${token}/enhance-stay`);
@@ -67,6 +70,11 @@ export default function BookingDetailsView({
         />
         {/* Black gradient from bottom - subtle overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
+      </div>
+
+      {/* Language Switcher - Always on the right */}
+      <div className="fixed top-6 right-6 z-20">
+        <LanguageSwitcher currentLanguage={locale} onLanguageChange={(language) => changeLanguage(language.code)} />
       </div>
 
       {/* Content */}
@@ -96,10 +104,10 @@ export default function BookingDetailsView({
           {/* Page Title */}
           <motion.div variants={itemVariants}>
             <h1 className="text-4xl md:text-5xl font-bold mb-2">
-              YOUR BOOKING
+              {t('bookingDetails.title')}
             </h1>
             <p className="text-white/80 text-lg">
-              Everything is ready for your stay
+              {t('bookingDetails.subtitle')}
             </p>
           </motion.div>
 
@@ -118,7 +126,7 @@ export default function BookingDetailsView({
             {/* Hotel Name */}
             <div>
               <p className="text-sm text-white/60 uppercase tracking-wider mb-1">
-                Hotel
+                {t('bookingDetails.hotel')}
               </p>
               <p className="text-xl font-bold">{booking.hotelName}</p>
             </div>
@@ -132,7 +140,7 @@ export default function BookingDetailsView({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-white/60">
                   <Calendar className="w-4 h-4" />
-                  <span className="text-xs uppercase tracking-wider">Check-in</span>
+                  <span className="text-xs uppercase tracking-wider">{t('bookingDetails.checkIn')}</span>
                 </div>
                 <p className="text-lg font-semibold">{booking.checkIn}</p>
               </div>
@@ -141,7 +149,7 @@ export default function BookingDetailsView({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-white/60">
                   <Calendar className="w-4 h-4" />
-                  <span className="text-xs uppercase tracking-wider">Check-out</span>
+                  <span className="text-xs uppercase tracking-wider">{t('bookingDetails.checkOut')}</span>
                 </div>
                 <p className="text-lg font-semibold">{booking.checkOut}</p>
               </div>
@@ -150,7 +158,7 @@ export default function BookingDetailsView({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-white/60">
                   <Moon className="w-4 h-4" />
-                  <span className="text-xs uppercase tracking-wider">Nights</span>
+                  <span className="text-xs uppercase tracking-wider">{t('bookingDetails.nights')}</span>
                 </div>
                 <p className="text-lg font-semibold">{booking.nights}</p>
               </div>
@@ -159,7 +167,7 @@ export default function BookingDetailsView({
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-white/60">
                   <Users className="w-4 h-4" />
-                  <span className="text-xs uppercase tracking-wider">Guests</span>
+                  <span className="text-xs uppercase tracking-wider">{t('bookingDetails.guests')}</span>
                 </div>
                 <p className="text-lg font-semibold">{booking.guests}</p>
               </div>
@@ -192,10 +200,10 @@ export default function BookingDetailsView({
               {/* Content */}
               <div className="relative p-5 space-y-3">
                 <h3 className="text-2xl font-bold text-white">
-                  Upgrade to Deluxe King Room
+                  {t('bookingDetails.upgradeTitle')}
                 </h3>
                 <p className="text-white/80 text-sm leading-relaxed">
-                  Experience luxury with stunning city views, premium amenities, and extra space for ultimate comfort
+                  {t('bookingDetails.upgradeDescription')}
                 </p>
 
                 {/* CTA Button */}
@@ -207,7 +215,7 @@ export default function BookingDetailsView({
                   }}
                 >
                   <Sparkles className="w-4 h-4" />
-                  View Details
+                  {t('bookingDetails.viewDetails')}
                 </button>
               </div>
             </div>
@@ -220,7 +228,7 @@ export default function BookingDetailsView({
             onClick={handleContinue}
             className="block w-full bg-[#F3EFE9] text-gray-900 text-center font-semibold text-lg py-4 rounded-full transition-all duration-300 hover:bg-[#E8E4DD] hover:scale-[1.02] shadow-xl"
           >
-            CONTINUE
+            {t('bookingDetails.continue')}
           </button>
         </motion.div>
 

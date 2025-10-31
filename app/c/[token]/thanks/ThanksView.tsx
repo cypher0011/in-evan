@@ -14,6 +14,8 @@ import {
   Utensils,
   Phone
 } from 'lucide-react';
+import { useTranslations } from '@/lib/i18n/useTranslations';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 type ThanksViewProps = {
   bookingData: {
@@ -51,6 +53,7 @@ const itemVariants = {
 
 export default function ThanksView({ bookingData }: ThanksViewProps) {
   const router = useRouter();
+  const { t, locale, changeLanguage, isRTL } = useTranslations();
   const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
@@ -72,6 +75,11 @@ export default function ThanksView({ bookingData }: ThanksViewProps) {
           className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+      </div>
+
+      {/* Language Switcher - Always on the right */}
+      <div className="fixed top-6 right-6 z-30">
+        <LanguageSwitcher currentLanguage={locale} onLanguageChange={(language) => changeLanguage(language.code)} />
       </div>
 
       {/* Confetti Effect */}
@@ -157,13 +165,13 @@ export default function ThanksView({ bookingData }: ThanksViewProps) {
           {/* Success Message */}
           <motion.div variants={itemVariants} className="text-center space-y-3">
             <h1 className="text-4xl md:text-5xl font-bold text-green-400">
-              Check-in Complete!
+              {t('thanks.title')}
             </h1>
             <p className="text-2xl font-semibold">
-              Welcome, {bookingData.guestName}!
+              {t('thanks.welcome').replace('{{name}}', bookingData.guestName)}
             </p>
             <p className="text-white/80 text-lg">
-              Your room is ready and we can't wait to host you
+              {t('thanks.subtitle')}
             </p>
           </motion.div>
 
@@ -173,29 +181,29 @@ export default function ThanksView({ bookingData }: ThanksViewProps) {
             variants={itemVariants}
           >
             <h2 className="text-xl font-bold mb-4 text-center">
-              Booking Confirmation
+              {t('thanks.bookingConfirmation')}
             </h2>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="space-y-1">
-                <p className="text-xs text-white/60 uppercase tracking-wider">Confirmation</p>
+                <p className="text-xs text-white/60 uppercase tracking-wider">{t('thanks.confirmation')}</p>
                 <p className="font-bold text-lg">{bookingData.confirmationNumber}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-white/60 uppercase tracking-wider flex items-center gap-1">
-                  <DoorOpen className="w-3 h-3" /> Room
+                  <DoorOpen className="w-3 h-3" /> {t('thanks.room')}
                 </p>
                 <p className="font-bold text-lg">{bookingData.roomNumber}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-white/60 uppercase tracking-wider flex items-center gap-1">
-                  <Calendar className="w-3 h-3" /> Check-in
+                  <Calendar className="w-3 h-3" /> {t('thanks.checkIn')}
                 </p>
                 <p className="font-semibold">{bookingData.checkIn}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-white/60 uppercase tracking-wider flex items-center gap-1">
-                  <Calendar className="w-3 h-3" /> Check-out
+                  <Calendar className="w-3 h-3" /> {t('thanks.checkOut')}
                 </p>
                 <p className="font-semibold">{bookingData.checkOut}</p>
               </div>
@@ -205,9 +213,9 @@ export default function ThanksView({ bookingData }: ThanksViewProps) {
               <>
                 <div className="border-t border-white/20 my-4" />
                 <div className="text-center">
-                  <p className="text-sm text-white/60 mb-1">Total Paid</p>
+                  <p className="text-sm text-white/60 mb-1">{t('thanks.totalPaid')}</p>
                   <p className="text-3xl font-bold text-green-400">
-                    {bookingData.totalPaid.toFixed(2)} SAR
+                    {bookingData.totalPaid.toFixed(2)} {t('enhanceStay.sar')}
                   </p>
                 </div>
               </>
@@ -221,24 +229,24 @@ export default function ThanksView({ bookingData }: ThanksViewProps) {
           >
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-400" />
-              What's Next?
+              {t('thanks.whatsNext')}
             </h3>
             <div className="space-y-3 text-sm">
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                <p>you can access directly just say u have checkd-in early</p>
+                <p>{t('thanks.directAccess')}</p>
               </div>
               <div className="flex items-start gap-3">
                 <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                <p>Your room will be ready for check-in at 3:00 PM</p>
+                <p>{t('thanks.roomReady')}</p>
               </div>
               <div className="flex items-start gap-3">
                 <Utensils className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-                <p>Access the Guest Portal to order room service and minibar</p>
+                <p>{t('thanks.roomService')}</p>
               </div>
               <div className="flex items-start gap-3">
                 <Gift className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
-                <p>Resturant time from 10 to 7</p>
+                <p>{t('thanks.restaurant')}</p>
               </div>
               {/* <div className="flex items-start gap-3">
                 <Phone className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
@@ -254,7 +262,7 @@ export default function ThanksView({ bookingData }: ThanksViewProps) {
               className="w-full bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold py-4 px-6 rounded-full hover:from-amber-500 hover:to-orange-600 transition-all duration-300 shadow-xl flex items-center justify-center gap-2 text-lg"
             >
               <Sparkles className="w-5 h-5" />
-              Access Your Guest Portal
+              {t('thanks.accessPortal')}
               <ArrowRight className="w-5 h-5" />
             </button>
 
@@ -268,7 +276,7 @@ export default function ThanksView({ bookingData }: ThanksViewProps) {
             variants={itemVariants}
             className="text-center text-white/60 text-sm pt-6 border-t border-white/10"
           >
-            <p>A confirmation email has been sent to your email address</p>
+            <p>{t('thanks.emailSent')}</p>
           </motion.div>
         </div>
       </motion.div>

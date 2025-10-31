@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { CheckCircle2, User, Phone, DoorOpen, Mail, Calendar, Globe, IdCard } from 'lucide-react';
+import NationalitySelector from '@/components/NationalitySelector';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useTranslations } from '@/lib/i18n/useTranslations';
 
 type GuestData = {
   firstName: string;
@@ -59,6 +62,7 @@ export default function GuestInformationView({
   guestData,
 }: GuestInformationViewProps) {
   const router = useRouter();
+  const { t, locale, changeLanguage, isRTL } = useTranslations();
   const [formData, setFormData] = useState<FormData>({
     email: '',
     dateOfBirth: '',
@@ -85,19 +89,19 @@ export default function GuestInformationView({
     const newErrors: FormErrors = {};
 
     if (!formData.dateOfBirth) {
-      newErrors.dateOfBirth = 'Date of birth is required';
+      newErrors.dateOfBirth = t('guestInfo.errors.dateOfBirthRequired');
     }
 
     if (!formData.nationality) {
-      newErrors.nationality = 'Nationality is required';
+      newErrors.nationality = t('guestInfo.errors.nationalityRequired');
     }
 
     if (!formData.idType) {
-      newErrors.idType = 'Please select an ID type';
+      newErrors.idType = t('guestInfo.errors.idTypeRequired');
     }
 
     if (!formData.idNumber) {
-      newErrors.idNumber = 'ID number is required';
+      newErrors.idNumber = t('guestInfo.errors.idNumberRequired');
     }
 
     setErrors(newErrors);
@@ -125,6 +129,14 @@ export default function GuestInformationView({
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
       </div>
 
+      {/* Language Switcher - Always on the right */}
+      <div className="absolute top-6 right-6 z-10">
+        <LanguageSwitcher
+          currentLanguage={locale}
+          onLanguageChange={(language) => changeLanguage(language.code)}
+        />
+      </div>
+
       {/* Content */}
       <motion.div
         className="relative z-10 flex flex-col min-h-screen px-6 py-12 text-white"
@@ -150,10 +162,10 @@ export default function GuestInformationView({
         {/* Page Title */}
         <motion.div variants={itemVariants} className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-3">
-            GUEST INFORMATION
+            {t('guestInfo.title')}
           </h1>
           <p className="text-white/80 text-lg">
-            Complete your check-in details
+            {t('guestInfo.subtitle')}
           </p>
         </motion.div>
 
@@ -163,7 +175,7 @@ export default function GuestInformationView({
           <motion.div variants={itemVariants}>
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
               <CheckCircle2 className="w-6 h-6 text-green-400" />
-              Confirmed Details
+              {t('guestInfo.confirmedDetails')}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* First Name */}
@@ -173,7 +185,7 @@ export default function GuestInformationView({
                     <User className="w-5 h-5 text-green-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-white/60 uppercase tracking-wider">First Name</p>
+                    <p className="text-xs text-white/60 uppercase tracking-wider">{t('guestInfo.firstName')}</p>
                     <p className="text-lg font-semibold">{guestData.firstName}</p>
                   </div>
                   <CheckCircle2 className="w-5 h-5 text-green-400" />
@@ -187,7 +199,7 @@ export default function GuestInformationView({
                     <User className="w-5 h-5 text-green-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-white/60 uppercase tracking-wider">Last Name</p>
+                    <p className="text-xs text-white/60 uppercase tracking-wider">{t('guestInfo.lastName')}</p>
                     <p className="text-lg font-semibold">{guestData.lastName}</p>
                   </div>
                   <CheckCircle2 className="w-5 h-5 text-green-400" />
@@ -201,7 +213,7 @@ export default function GuestInformationView({
                     <Phone className="w-5 h-5 text-green-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-white/60 uppercase tracking-wider">Phone</p>
+                    <p className="text-xs text-white/60 uppercase tracking-wider">{t('guestInfo.phone')}</p>
                     <p className="text-lg font-semibold">{guestData.phone}</p>
                   </div>
                   <CheckCircle2 className="w-5 h-5 text-green-400" />
@@ -215,7 +227,7 @@ export default function GuestInformationView({
                     <DoorOpen className="w-5 h-5 text-green-400" />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-white/60 uppercase tracking-wider">Room</p>
+                    <p className="text-xs text-white/60 uppercase tracking-wider">{t('guestInfo.room')}</p>
                     <p className="text-lg font-semibold">{guestData.roomNumber}</p>
                   </div>
                   <CheckCircle2 className="w-5 h-5 text-green-400" />
@@ -226,14 +238,14 @@ export default function GuestInformationView({
 
           {/* Additional Information Form */}
           <motion.div variants={itemVariants}>
-            <h2 className="text-xl font-bold mb-4">Additional Information</h2>
+            <h2 className="text-xl font-bold mb-4">{t('guestInfo.additionalInfo')}</h2>
             <div className="backdrop-blur-md bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl space-y-6">
 
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium mb-2 text-white/90 flex items-center gap-2">
                   <Mail className="w-4 h-4" />
-                  Email (Optional)
+                  {t('guestInfo.email')}
                 </label>
                 <input
                   type="email"
@@ -241,7 +253,7 @@ export default function GuestInformationView({
                   value={formData.email}
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-amber-400 focus:bg-white/10 transition-all duration-300"
-                  placeholder="your@email.com"
+                  placeholder={t('guestInfo.emailPlaceholder')}
                 />
               </div>
 
@@ -250,7 +262,7 @@ export default function GuestInformationView({
                 <div>
                   <label className="block text-sm font-medium mb-2 text-white/90 flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
-                    Date of Birth *
+                    {t('guestInfo.dateOfBirth')} {t('guestInfo.required')}
                   </label>
                   <input
                     type="date"
@@ -269,21 +281,18 @@ export default function GuestInformationView({
                 <div>
                   <label className="block text-sm font-medium mb-2 text-white/90 flex items-center gap-2">
                     <Globe className="w-4 h-4" />
-                    Nationality *
+                    {t('guestInfo.nationality')} {t('guestInfo.required')}
                   </label>
-                  <input
-                    type="text"
-                    name="nationality"
+                  <NationalitySelector
                     value={formData.nationality}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 bg-white/5 border ${
-                      errors.nationality ? 'border-red-400' : 'border-white/20'
-                    } rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-amber-400 focus:bg-white/10 transition-all duration-300`}
-                    placeholder="e.g., Saudi Arabia"
+                    onChange={(value) => {
+                      setFormData(prev => ({ ...prev, nationality: value }));
+                      if (errors.nationality) {
+                        setErrors(prev => ({ ...prev, nationality: '' }));
+                      }
+                    }}
+                    error={errors.nationality}
                   />
-                  {errors.nationality && (
-                    <p className="text-red-400 text-xs mt-1">{errors.nationality}</p>
-                  )}
                 </div>
               </div>
 
@@ -292,7 +301,7 @@ export default function GuestInformationView({
                 <div>
                   <label className="block text-sm font-medium mb-2 text-white/90 flex items-center gap-2">
                     <IdCard className="w-4 h-4" />
-                    ID Type *
+                    {t('guestInfo.idType')} {t('guestInfo.required')}
                   </label>
                   <select
                     name="idType"
@@ -302,10 +311,10 @@ export default function GuestInformationView({
                       errors.idType ? 'border-red-400' : 'border-white/20'
                     } rounded-xl text-white focus:outline-none focus:border-amber-400 focus:bg-white/10 transition-all duration-300`}
                   >
-                    <option value="" className="bg-gray-900">Select ID Type</option>
-                    <option value="iqama" className="bg-gray-900">Iqama</option>
-                    <option value="passport" className="bg-gray-900">Passport</option>
-                    <option value="national_id" className="bg-gray-900">National ID</option>
+                    <option value="" className="bg-gray-900">{t('guestInfo.idTypePlaceholder')}</option>
+                    <option value="iqama" className="bg-gray-900">{t('guestInfo.idTypeIqama')}</option>
+                    <option value="passport" className="bg-gray-900">{t('guestInfo.idTypePassport')}</option>
+                    <option value="national_id" className="bg-gray-900">{t('guestInfo.idTypeNationalId')}</option>
                   </select>
                   {errors.idType && (
                     <p className="text-red-400 text-xs mt-1">{errors.idType}</p>
@@ -314,7 +323,7 @@ export default function GuestInformationView({
 
                 <div>
                   <label className="block text-sm font-medium mb-2 text-white/90">
-                    ID Number *
+                    {t('guestInfo.idNumber')} {t('guestInfo.required')}
                   </label>
                   <input
                     type="text"
@@ -324,7 +333,7 @@ export default function GuestInformationView({
                     className={`w-full px-4 py-3 bg-white/5 border ${
                       errors.idNumber ? 'border-red-400' : 'border-white/20'
                     } rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-amber-400 focus:bg-white/10 transition-all duration-300`}
-                    placeholder="Enter your ID number"
+                    placeholder={t('guestInfo.idNumberPlaceholder')}
                   />
                   {errors.idNumber && (
                     <p className="text-red-400 text-xs mt-1">{errors.idNumber}</p>
@@ -335,7 +344,7 @@ export default function GuestInformationView({
               {/* Special Requests */}
               <div>
                 <label className="block text-sm font-medium mb-2 text-white/90">
-                  Special Requests (Optional)
+                  {t('guestInfo.specialRequests')}
                 </label>
                 <textarea
                   name="specialRequests"
@@ -343,7 +352,7 @@ export default function GuestInformationView({
                   onChange={handleInputChange}
                   rows={4}
                   className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:border-amber-400 focus:bg-white/10 transition-all duration-300 resize-none"
-                  placeholder="Any special requirements? (e.g., dietary restrictions, room preferences)"
+                  placeholder={t('guestInfo.specialRequestsPlaceholder')}
                 />
               </div>
             </div>
@@ -355,7 +364,7 @@ export default function GuestInformationView({
               onClick={handleContinue}
               className="w-full bg-[#F3EFE9] text-gray-900 font-bold py-4 px-6 rounded-full hover:bg-[#E8E4DD] transition-all duration-300 hover:scale-[1.02] shadow-xl"
             >
-              CONTINUE TO PAYMENT
+              {t('guestInfo.continue')}
             </button>
           </motion.div>
         </div>

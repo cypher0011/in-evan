@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useTranslations } from '@/lib/i18n/useTranslations';
 
 // Re-create the Link component with motion properties
 const MotionLink = motion(Link);
@@ -49,6 +51,8 @@ export default function WelcomeView({
   guestName,
   booking,
 }: WelcomeViewProps) {
+  const { t, locale, changeLanguage, isRTL } = useTranslations();
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Background Image with Gradient Overlay */}
@@ -62,6 +66,14 @@ export default function WelcomeView({
         />
         {/* Black gradient from bottom - subtle overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
+      </div>
+
+      {/* Language Switcher - Always on the right */}
+      <div className="absolute top-6 right-6 z-10">
+        <LanguageSwitcher
+          currentLanguage={locale}
+          onLanguageChange={(language) => changeLanguage(language.code)}
+        />
       </div>
 
       {/* Content */}
@@ -92,16 +104,16 @@ export default function WelcomeView({
           variants={itemVariants}
         >
           <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-4">
-            WELCOME
+            {t('welcome.title')}
             <br />
             {guestName},
             <br />
-            TO ENJOY YOUR
+            {t('welcome.to')}
             <br />
-            <span className="text-5xl md:text-7xl">STAY CHECK-IN</span>
+            <span className="text-5xl md:text-7xl">{t('welcome.stay')}</span>
           </h1>
           <p className="text-lg text-white/90 mt-4">
-            let's explore the world with us with just a few clicks
+            {t('welcome.subtitle')}
           </p>
         </motion.div>
 
@@ -113,24 +125,18 @@ export default function WelcomeView({
           >
             <div className="flex gap-4 items-center">
               <div className="w-2/5 flex-shrink-0">
-                {booking.roomImageUrl ? (
-                  <div className="relative w-full h-32 rounded-xl overflow-hidden">
-                    <Image
-                      src={booking.roomImageUrl}
-                      alt={booking.roomType || 'Hotel Room'}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                ) : (
-                  <div className="w-full h-32 bg-gradient-to-br from-amber-100 to-amber-200 rounded-xl flex items-center justify-center">
-                    <span className="text-4xl">🏨</span>
-                  </div>
-                )}
+                <div className="relative w-full h-32 rounded-xl overflow-hidden">
+                  <Image
+                    src={booking.roomImageUrl || '/normal_room.jpeg'}
+                    alt={booking.roomType || 'Hotel Room'}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
               </div>
-              <div className="flex-1 text-right">
+              <div className={`flex-1 ${isRTL ? 'text-left' : 'text-right'}`}>
                 <p className="text-xs text-white/60 uppercase tracking-wider mb-1">
-                  YOUR ROOM IS
+                  {t('welcome.yourRoom')}
                 </p>
                 <p className="text-lg font-semibold text-white mb-1">
                   {booking.roomType || 'Double Room'}
@@ -151,7 +157,7 @@ export default function WelcomeView({
             whileHover={{ scale: 1.03, backgroundColor: '#E8E4DD' }}
             whileTap={{ scale: 0.98 }}
           >
-            CHECK-IN
+            {t('welcome.checkIn')}
           </MotionLink>
         </motion.div>
 
@@ -160,25 +166,24 @@ export default function WelcomeView({
           className="flex justify-between items-center text-sm"
           variants={itemVariants}
         >
-          <span className="text-white/70">Need help?</span>
+          <span className="text-white/70">{t('welcome.needHelp')}</span>
           <MotionLink
             href="#"
             className="text-white font-semibold uppercase tracking-wide"
             whileHover={{ opacity: 0.8 }}
             whileTap={{ opacity: 0.6 }}
           >
-            CONTACT US
+            {t('welcome.contactUs')}
           </MotionLink>
         </motion.div>
-                {/* Footer - Made by Evan */}
+        {/* Footer - Made by Evan */}
         <motion.div
           className="text-center text-white/50 text-xs tracking-wider"
           variants={itemVariants}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0, transition: { delay: 1.2 } }}
-        >
-          Made with ❤️ by <span className="text-white font-semibold">Evan</span>
-        </motion.div>
+          dangerouslySetInnerHTML={{ __html: t('welcome.madeBy') }}
+        />
       </motion.div>
     </div>
   );

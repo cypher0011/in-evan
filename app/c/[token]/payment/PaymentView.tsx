@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Apple, CreditCard, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useMemo } from 'react';
+import { useTranslations } from '@/lib/i18n/useTranslations';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 // --- TYPES ---
 type ServiceItem = {
@@ -18,11 +20,6 @@ type ServiceItem = {
 type PaymentViewProps = {
   token: string;
   services: ServiceItem[];
-};
-
-// --- HELPER FUNCTIONS ---
-const formatCurrency = (amount: number) => {
-  return `${amount.toFixed(2)} SAR`;
 };
 
 // --- ANIMATION VARIANTS ---
@@ -54,6 +51,11 @@ export default function PaymentView({
   services,
 }: PaymentViewProps) {
   const router = useRouter();
+  const { t, locale, changeLanguage, isRTL } = useTranslations();
+
+  const formatCurrency = (amount: number) => {
+    return `${amount.toFixed(2)} ${t('enhanceStay.sar')}`;
+  };
 
   const { subtotal, vat, total } = useMemo(() => {
     const sub = services.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -87,6 +89,11 @@ export default function PaymentView({
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
       </div>
 
+      {/* Language Switcher - Always on the right */}
+      <div className="fixed top-6 right-6 z-20">
+        <LanguageSwitcher currentLanguage={locale} onLanguageChange={(language) => changeLanguage(language.code)} />
+      </div>
+
       {/* Content */}
       <motion.div
         className="relative z-10 flex flex-col min-h-screen px-6 py-12"
@@ -108,10 +115,10 @@ export default function PaymentView({
 
         <motion.div variants={itemVariants} className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-3">
-            {hasPayment ? 'PAYMENT' : 'COMPLETE CHECK-IN'}
+            {hasPayment ? t('payment.titleWithPayment') : t('payment.titleNoPayment')}
           </h1>
           <p className="text-white/80 text-lg">
-            {hasPayment ? 'Secure your booking' : 'Finalize your reservation'}
+            {hasPayment ? t('payment.subtitleWithPayment') : t('payment.subtitleNoPayment')}
           </p>
         </motion.div>
 
@@ -126,7 +133,7 @@ export default function PaymentView({
               >
                 <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
                   <CheckCircle2 className="w-6 h-6 text-green-400" />
-                  Order Summary
+                  {t('payment.orderSummary')}
                 </h2>
                 <div className="space-y-4">
                   {services.map((item) => (
@@ -135,7 +142,7 @@ export default function PaymentView({
                         <p className="font-semibold text-white">{item.name}</p>
                         <p className="text-white/70 text-sm mt-1">{item.description}</p>
                         {item.quantity > 1 && (
-                          <p className="text-white/60 text-xs mt-1">Quantity: {item.quantity}</p>
+                          <p className="text-white/60 text-xs mt-1">{t('payment.quantity')}: {item.quantity}</p>
                         )}
                       </div>
                       <p className="font-bold text-lg ml-4">{formatCurrency(item.price * item.quantity)}</p>
@@ -145,15 +152,15 @@ export default function PaymentView({
                 <div className="my-4 h-px bg-white/20" />
                 <div className="space-y-2">
                   <div className="flex justify-between text-white/80">
-                    <p>Subtotal</p>
+                    <p>{t('payment.subtotal')}</p>
                     <p className="font-semibold">{formatCurrency(subtotal)}</p>
                   </div>
                   <div className="flex justify-between text-white/80">
-                    <p>VAT (15%)</p>
+                    <p>{t('payment.vat')}</p>
                     <p className="font-semibold">{formatCurrency(vat)}</p>
                   </div>
                   <div className="flex justify-between text-xl font-bold pt-2 border-t border-white/20">
-                    <p>Total</p>
+                    <p>{t('payment.total')}</p>
                     <p className="text-amber-300">{formatCurrency(total)}</p>
                   </div>
                 </div>
@@ -161,7 +168,7 @@ export default function PaymentView({
 
               {/* Payment Method */}
               <motion.div variants={itemVariants} className="space-y-4">
-                <h2 className="text-xl font-semibold text-center">Payment Method</h2>
+                <h2 className="text-xl font-semibold text-center">{t('payment.paymentMethod')}</h2>
 
                 {/* Apple Pay Button */}
                 <motion.button
@@ -191,7 +198,7 @@ export default function PaymentView({
                       <CreditCard className="h-6 w-6 text-white" />
                     </div>
                     <div className="text-left flex-1">
-                      <p className="font-semibold">Credit or Debit Card</p>
+                      <p className="font-semibold">{t('payment.creditCard')}</p>
                       <p className="text-white/60 text-sm">Visa, Mastercard, Mada</p>
                     </div>
                   </div>
@@ -207,9 +214,9 @@ export default function PaymentView({
               <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="w-10 h-10 text-green-400" />
               </div>
-              <h2 className="text-2xl font-bold mb-3">No Payment Required</h2>
+              <h2 className="text-2xl font-bold mb-3">{t('payment.titleNoPayment')}</h2>
               <p className="text-white/80 mb-6 leading-relaxed">
-                You haven't selected any additional services. Click below to complete your check-in.
+                {t('payment.subtitleNoPayment')}
               </p>
               <motion.button
                 onClick={() => router.push(`/c/${token}/thanks`)}
@@ -217,7 +224,7 @@ export default function PaymentView({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                COMPLETE CHECK-IN
+                {t('payment.completeCheckIn')}
               </motion.button>
             </motion.div>
           )}
@@ -228,7 +235,7 @@ export default function PaymentView({
             variants={itemVariants}
           >
             <ShieldCheck className="h-5 w-5 text-green-400" />
-            <p>Secure payment • SSL encrypted • PCI compliant</p>
+            <p>{t('payment.secureNote')}</p>
           </motion.div>
         </div>
       </motion.div>

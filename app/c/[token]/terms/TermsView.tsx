@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { useTranslations } from '@/lib/i18n/useTranslations';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 type TermsViewProps = {
   token: string;
@@ -40,6 +42,7 @@ const itemVariants = {
 export default function TermsView({ token, hotelName, termsText }: TermsViewProps) {
   const router = useRouter();
   const sigCanvas = useRef<SignatureCanvas>(null);
+  const { t, locale, changeLanguage, isRTL } = useTranslations();
 
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [dataConsent, setDataConsent] = useState(false);
@@ -79,6 +82,11 @@ export default function TermsView({ token, hotelName, termsText }: TermsViewProp
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
       </div>
 
+      {/* Language Switcher - Always on the right */}
+      <div className="fixed top-6 right-6 z-20">
+        <LanguageSwitcher currentLanguage={locale} onLanguageChange={(language) => changeLanguage(language.code)} />
+      </div>
+
       {/* Content */}
       <motion.main
         className="relative z-10 flex items-center justify-center min-h-screen p-4 py-12"
@@ -91,7 +99,7 @@ export default function TermsView({ token, hotelName, termsText }: TermsViewProp
           <motion.div variants={itemVariants}>
             <Card className="w-full bg-slate-900/50 backdrop-blur-md border border-white/20 rounded-2xl p-6 text-white shadow-2xl mb-6">
               <CardHeader className="p-0 mb-4">
-                <CardTitle className="text-xl font-bold m-0">Terms of Service</CardTitle>
+                <CardTitle className="text-xl font-bold m-0">{t('terms.title')}</CardTitle>
               </CardHeader>
               <CardContent className="p-0 h-40 overflow-y-auto custom-scrollbar">
                 <CardDescription className="text-slate-300 text-sm leading-relaxed">
@@ -105,36 +113,36 @@ export default function TermsView({ token, hotelName, termsText }: TermsViewProp
           <motion.div variants={itemVariants}>
             <Card className="w-full bg-slate-900/50 backdrop-blur-md border border-white/20 rounded-2xl p-8 text-white shadow-2xl">
               <CardHeader className="text-center p-0 mb-6">
-                <CardTitle className="text-3xl font-bold m-0">Consents</CardTitle>
+                <CardTitle className="text-3xl font-bold m-0">{t('terms.consentsTitle')}</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="space-y-3 mb-6">
                   <ConsentItem
                     checked={termsAccepted}
                     onChange={setTermsAccepted}
-                    text="I accept the terms and conditions"
+                    text={t('terms.termsAccept')}
                   />
                   <ConsentItem
                     checked={dataConsent}
                     onChange={setDataConsent}
-                    text="I consent to the processing of my personal data"
+                    text={t('terms.dataConsent')}
                   />
                   <ConsentItem
                     checked={photoConsent}
                     onChange={setPhotoConsent}
-                    text="I consent to photography during my stay (optional)"
+                    text={t('terms.photoConsent')}
                   />
                 </div>
 
                 <div className="mb-8">
                   <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-semibold text-slate-100">Your Signature</h3>
+                    <h3 className="font-semibold text-slate-100">{t('terms.yourSignature')}</h3>
                     <Button
                       variant="link"
                       onClick={handleClearSignature}
                       className="text-slate-400 hover:text-white text-sm font-semibold p-0 h-auto"
                     >
-                      Clear
+                      {t('terms.clear')}
                     </Button>
                   </div>
                   <div className="bg-slate-200 rounded-lg shadow-inner">
@@ -157,7 +165,7 @@ export default function TermsView({ token, hotelName, termsText }: TermsViewProp
               disabled={isContinueDisabled}
               className="w-full bg-[#F3EFE9] text-black font-bold h-16 rounded-full text-lg shadow-lg hover:bg-[#E8E4DD] transform hover:scale-[1.02] transition-all duration-300 ease-in-out disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed disabled:transform-none"
             >
-              Continue
+              {t('terms.continue')}
             </Button>
           </motion.div>
           

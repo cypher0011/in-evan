@@ -3,6 +3,7 @@
  * Extract hotel subdomain and token from request headers (set by middleware)
  */
 
+import { cache } from 'react';
 import { headers } from 'next/headers';
 
 export interface HotelContext {
@@ -13,8 +14,9 @@ export interface HotelContext {
 
 /**
  * Get hotel context from middleware headers (server components)
+ * Cached to avoid reading headers multiple times in the same request
  */
-export async function getHotelContext(): Promise<HotelContext | null> {
+export const getHotelContext = cache(async (): Promise<HotelContext | null> => {
   const headersList = await headers();
   const subdomain = headersList.get('x-hotel-subdomain');
 
@@ -27,7 +29,7 @@ export async function getHotelContext(): Promise<HotelContext | null> {
     token: headersList.get('x-guest-token') || undefined,
     sessionToken: headersList.get('x-session-token') || undefined,
   };
-}
+});
 
 /**
  * Get hotel subdomain only

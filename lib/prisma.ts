@@ -1,6 +1,6 @@
 /**
  * Prisma Client Singleton
- * Prevents multiple instances in development (hot reload)
+ * Optimized for serverless with connection pooling
  */
 
 import { PrismaClient } from '@prisma/client';
@@ -13,7 +13,7 @@ const prismaClientSingleton = () => {
     datasources: {
       db: {
         url: process.env.DATABASE_URL?.includes('pooler.supabase.com')
-          ? process.env.DATABASE_URL + '?pgbouncer=true'
+          ? process.env.DATABASE_URL + '?pgbouncer=true&connection_limit=1'
           : process.env.DATABASE_URL,
       },
     },
