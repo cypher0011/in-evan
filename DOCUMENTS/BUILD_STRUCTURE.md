@@ -34,10 +34,12 @@ $lines = @('127.0.0.1 in-evan.com','127.0.0.1 admin.in-evan.com'); $hosts = "$en
 # Core Framework
 - Next.js
 - Netlify
+
 # Database & ORM
 - Prisma 
 - Supabase & Supabase cli
 - AWS S3
+- Redis
 
 # APIs
 - unkey

@@ -11,9 +11,9 @@ export const dynamic = 'force-dynamic';
 export default async function PaymentPage({
   params,
 }: {
-  params: { token: string };
+  params: Promise<{ token: string }>;
 }) {
-  const { token } = params;
+  const { token } = await params;
   await getValidatedData(token);
 
   // TODO: Fetch selected enhancements from session/database

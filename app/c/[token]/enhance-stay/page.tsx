@@ -12,9 +12,9 @@ export const dynamic = 'force-dynamic';
 export default async function EnhanceStayPage({
   params,
 }: {
-  params: { token: string };
+  params: Promise<{ token: string }>;
 }) {
-  const { token } = params;
+  const { token } = await params;
   await getValidatedData(token);
 
   // TODO: Fetch enhance_stay_options from database for this hotel

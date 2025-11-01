@@ -7,7 +7,6 @@ import ConsentItem from './ConsentItem';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 import { useTranslations } from '@/lib/i18n/useTranslations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
@@ -15,28 +14,6 @@ type TermsViewProps = {
   token: string;
   hotelName: string;
   termsText?: string;
-};
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 100,
-    },
-  },
 };
 
 export default function TermsView({ token, hotelName, termsText }: TermsViewProps) {
@@ -77,6 +54,10 @@ export default function TermsView({ token, hotelName, termsText }: TermsViewProp
           alt="Hotel Background"
           fill
           priority
+          quality={60}
+          sizes="100vw"
+          placeholder="blur"
+          blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWEREiMxUf/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
           className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
@@ -88,15 +69,10 @@ export default function TermsView({ token, hotelName, termsText }: TermsViewProp
       </div>
 
       {/* Content */}
-      <motion.main
-        className="relative z-10 flex items-center justify-center min-h-screen p-4 py-12"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      <main className="relative z-10 flex items-center justify-center min-h-screen p-4 py-12 animate-in fade-in duration-500">
         <div className="w-full max-w-md">
           {/* Terms of Service Card */}
-          <motion.div variants={itemVariants}>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
             <Card className="w-full bg-slate-900/50 backdrop-blur-md border border-white/20 rounded-2xl p-6 text-white shadow-2xl mb-6">
               <CardHeader className="p-0 mb-4">
                 <CardTitle className="text-xl font-bold m-0">{t('terms.title')}</CardTitle>
@@ -107,10 +83,10 @@ export default function TermsView({ token, hotelName, termsText }: TermsViewProp
                 </CardDescription>
               </CardContent>
             </Card>
-          </motion.div>
+          </div>
 
           {/* Consents Card */}
-          <motion.div variants={itemVariants}>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
             <Card className="w-full bg-slate-900/50 backdrop-blur-md border border-white/20 rounded-2xl p-8 text-white shadow-2xl">
               <CardHeader className="text-center p-0 mb-6">
                 <CardTitle className="text-3xl font-bold m-0">{t('terms.consentsTitle')}</CardTitle>
@@ -156,10 +132,10 @@ export default function TermsView({ token, hotelName, termsText }: TermsViewProp
                 </div>
               </CardContent>
             </Card>
-          </motion.div>
+          </div>
 
           {/* Continue Button */}
-          <motion.div className="mt-6" variants={itemVariants}>
+          <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
             <Button
               onClick={handleContinue}
               disabled={isContinueDisabled}
@@ -167,10 +143,10 @@ export default function TermsView({ token, hotelName, termsText }: TermsViewProp
             >
               {t('terms.continue')}
             </Button>
-          </motion.div>
-          
+          </div>
+
         </div>
-      </motion.main>
+      </main>
     </div>
   );
 }

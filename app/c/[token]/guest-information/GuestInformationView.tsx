@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 import { CheckCircle2, User, Phone, DoorOpen, Mail, Calendar, Globe, IdCard } from 'lucide-react';
 import NationalitySelector from '@/components/NationalitySelector';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -32,29 +31,6 @@ type FormData = {
 
 type FormErrors = {
   [K in keyof FormData]?: string;
-};
-
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 100,
-    },
-  },
 };
 
 export default function GuestInformationView({
@@ -130,7 +106,7 @@ export default function GuestInformationView({
       </div>
 
       {/* Language Switcher - Always on the right */}
-      <div className="absolute top-6 right-6 z-10">
+      <div className="absolute top-6 right-6 z-50">
         <LanguageSwitcher
           currentLanguage={locale}
           onLanguageChange={(language) => changeLanguage(language.code)}
@@ -138,17 +114,9 @@ export default function GuestInformationView({
       </div>
 
       {/* Content */}
-      <motion.div
-        className="relative z-10 flex flex-col min-h-screen px-6 py-12 text-white"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      <div className="relative z-10 flex flex-col min-h-screen px-6 py-12 text-white animate-in fade-in duration-500">
         {/* Logo */}
-        <motion.div
-          className="mb-8 flex justify-center"
-          variants={itemVariants}
-        >
+        <div className="mb-8 flex justify-center animate-in fade-in slide-in-from-top-4 duration-700">
           <Image
             src="/movenpick_logo.png"
             alt="Movenpick Hotel"
@@ -157,22 +125,22 @@ export default function GuestInformationView({
             priority
             className="object-contain"
           />
-        </motion.div>
+        </div>
 
         {/* Page Title */}
-        <motion.div variants={itemVariants} className="text-center mb-8">
+        <div className="text-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
           <h1 className="text-4xl md:text-5xl font-bold mb-3">
             {t('guestInfo.title')}
           </h1>
           <p className="text-white/80 text-lg">
             {t('guestInfo.subtitle')}
           </p>
-        </motion.div>
+        </div>
 
         {/* Main Content */}
         <div className="max-w-3xl mx-auto w-full space-y-6">
           {/* Confirmed Details Section */}
-          <motion.div variants={itemVariants}>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
               <CheckCircle2 className="w-6 h-6 text-green-400" />
               {t('guestInfo.confirmedDetails')}
@@ -234,10 +202,10 @@ export default function GuestInformationView({
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Additional Information Form */}
-          <motion.div variants={itemVariants}>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
             <h2 className="text-xl font-bold mb-4">{t('guestInfo.additionalInfo')}</h2>
             <div className="backdrop-blur-md bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl space-y-6">
 
@@ -356,19 +324,19 @@ export default function GuestInformationView({
                 />
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Continue Button */}
-          <motion.div variants={itemVariants} className="pt-4">
+          <div className="pt-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-700">
             <button
               onClick={handleContinue}
               className="w-full bg-[#F3EFE9] text-gray-900 font-bold py-4 px-6 rounded-full hover:bg-[#E8E4DD] transition-all duration-300 hover:scale-[1.02] shadow-xl"
             >
               {t('guestInfo.continue')}
             </button>
-          </motion.div>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

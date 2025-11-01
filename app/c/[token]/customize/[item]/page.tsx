@@ -13,9 +13,9 @@ export const dynamic = 'force-dynamic';
 export default async function CustomizeItemPage({
   params,
 }: {
-  params: { token: string; item: string };
+  params: Promise<{ token: string; item: string }>;
 }) {
-  const { token, item } = params;
+  const { token, item } = await params;
   const { hotel } = await getValidatedData(token);
 
   if (!item) {

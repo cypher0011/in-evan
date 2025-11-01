@@ -2,35 +2,8 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useTranslations } from '@/lib/i18n/useTranslations';
-
-// Re-create the Link component with motion properties
-const MotionLink = motion(Link);
-
-// Define animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.25,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 100,
-    },
-  },
-};
 
 // Define the type for the booking prop
 type BookingProps = {
@@ -62,6 +35,10 @@ export default function WelcomeView({
           alt="Hotel Background"
           fill
           priority
+          quality={60}
+          sizes="100vw"
+          placeholder="blur"
+          blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWEREiMxUf/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
           className="object-cover"
         />
         {/* Black gradient from bottom - subtle overlay */}
@@ -69,7 +46,7 @@ export default function WelcomeView({
       </div>
 
       {/* Language Switcher - Always on the right */}
-      <div className="absolute top-6 right-6 z-10">
+      <div className="absolute top-6 right-6 z-50">
         <LanguageSwitcher
           currentLanguage={locale}
           onLanguageChange={(language) => changeLanguage(language.code)}
@@ -77,17 +54,9 @@ export default function WelcomeView({
       </div>
 
       {/* Content */}
-      <motion.div
-        className="relative z-10 flex flex-col min-h-screen px-6 py-12 text-white"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      <div className="relative z-10 flex flex-col min-h-screen px-6 py-12 text-white animate-in fade-in duration-500">
         {/* Logo */}
-        <motion.div
-          className="mb-1 flex justify-center"
-          variants={itemVariants}
-        >
+        <div className="mb-1 flex justify-center animate-in fade-in slide-in-from-top-4 duration-700">
           <Image
             src="/movenpick_logo.png"
             alt="Movenpick Hotel"
@@ -96,13 +65,10 @@ export default function WelcomeView({
             priority
             className="object-contain"
           />
-        </motion.div>
+        </div>
 
         {/* Header Text */}
-        <motion.div
-          className="flex-1 flex flex-col justify-center max-w-xl"
-          variants={itemVariants}
-        >
+        <div className="flex-1 flex flex-col justify-center max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
           <h1 className="text-5xl md:text-6xl font-bold leading-tight mb-4">
             {t('welcome.title')}
             <br />
@@ -115,14 +81,11 @@ export default function WelcomeView({
           <p className="text-lg text-white/90 mt-4">
             {t('welcome.subtitle')}
           </p>
-        </motion.div>
+        </div>
 
         {/* Room Information Card - Glassmorphism */}
         {booking && (
-          <motion.div
-            className="backdrop-blur-md bg-white/10 rounded-2xl p-4 mb-8 border border-white/20 shadow-xl"
-            variants={itemVariants}
-          >
+          <div className="backdrop-blur-md bg-white/10 rounded-2xl p-4 mb-8 border border-white/20 shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
             <div className="flex gap-4 items-center">
               <div className="w-2/5 flex-shrink-0">
                 <div className="relative w-full h-32 rounded-xl overflow-hidden">
@@ -130,6 +93,9 @@ export default function WelcomeView({
                     src={booking.roomImageUrl || '/normal_room.jpeg'}
                     alt={booking.roomType || 'Hotel Room'}
                     fill
+                    loading="lazy"
+                    quality={75}
+                    sizes="(max-width: 768px) 40vw, 30vw"
                     className="object-cover"
                   />
                 </div>
@@ -146,45 +112,35 @@ export default function WelcomeView({
                 </p>
               </div>
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* CTA Button */}
-        <motion.div variants={itemVariants}>
-          <MotionLink
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
+          <Link
             href={`/c/${token}/terms`}
-            className="block w-full bg-[#F3EFE9] text-gray-900 text-center font-semibold text-lg py-4 rounded-full transition-colors mb-6"
-            whileHover={{ scale: 1.03, backgroundColor: '#E8E4DD' }}
-            whileTap={{ scale: 0.98 }}
+            className="block w-full bg-[#F3EFE9] text-gray-900 text-center font-semibold text-lg py-4 rounded-full transition-all hover:bg-[#E8E4DD] hover:scale-[1.02] active:scale-[0.98] mb-6"
           >
             {t('welcome.checkIn')}
-          </MotionLink>
-        </motion.div>
+          </Link>
+        </div>
 
         {/* Footer Links */}
-        <motion.div
-          className="flex justify-between items-center text-sm"
-          variants={itemVariants}
-        >
+        <div className="flex justify-between items-center text-sm animate-in fade-in duration-700 delay-700">
           <span className="text-white/70">{t('welcome.needHelp')}</span>
-          <MotionLink
+          <Link
             href="#"
-            className="text-white font-semibold uppercase tracking-wide"
-            whileHover={{ opacity: 0.8 }}
-            whileTap={{ opacity: 0.6 }}
+            className="text-white font-semibold uppercase tracking-wide transition-opacity hover:opacity-80 active:opacity-60"
           >
             {t('welcome.contactUs')}
-          </MotionLink>
-        </motion.div>
+          </Link>
+        </div>
         {/* Footer - Made by Evan */}
-        <motion.div
-          className="text-center text-white/50 text-xs tracking-wider"
-          variants={itemVariants}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0, transition: { delay: 1.2 } }}
+        <div
+          className="text-center text-white/50 text-xs tracking-wider animate-in fade-in duration-700 delay-1000"
           dangerouslySetInnerHTML={{ __html: t('welcome.madeBy') }}
         />
-      </motion.div>
+      </div>
     </div>
   );
 }

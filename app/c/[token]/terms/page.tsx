@@ -17,13 +17,13 @@ hello_world`;
 }
 
 type TermsPageProps = {
-  params: {
+  params: Promise<{
     token: string;
-  };
+  }>;
 };
 
 export default async function TermsPage({ params }: TermsPageProps) {
-  const { token } = params;
+  const { token } = await params;
   const { hotel } = await getValidatedData(token);
 
   // Fetch the dynamic T&C text

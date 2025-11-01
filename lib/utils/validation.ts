@@ -8,12 +8,11 @@ import prisma from '@/lib/prisma';
 
 /**
  * Validate hotel subdomain exists in database
- * Cached to avoid duplicate database queries in the same request
+ * Cached via React.cache() to avoid duplicate queries in the same request
+ * Redis removed - adds latency (10-50ms) with no benefit for low-traffic guest check-in
  */
 export const validateHotel = cache(async (subdomain: string) => {
   try {
-    // Use findFirst instead of findUnique because we filter by multiple fields
-    // (subdomain + status), and only subdomain has a unique constraint
     const hotel = await prisma.hotel.findFirst({
       where: {
         subdomain,
@@ -29,14 +28,15 @@ export const validateHotel = cache(async (subdomain: string) => {
 
     return hotel;
   } catch (error) {
-    console.error('[validateHotel] Error:', error);
+    console.error('[validateHotel] Database query error:', error);
     return null;
   }
 });
 
 /**
  * Validate guest token exists, is active, and belongs to the hotel
- * Cached to avoid duplicate database queries in the same request
+ * Cached via React.cache() to avoid duplicate queries in the same request
+ * Redis removed - adds latency with no benefit for this use case
  */
 export const validateToken = cache(async (token: string, hotelId: string) => {
   try {
@@ -46,9 +46,28 @@ export const validateToken = cache(async (token: string, hotelId: string) => {
         hotelId,
         status: 'active',
       },
-      include: {
-        guest: true,
+      select: {
+        id: true,
+        expiresAt: true,
+        guest: {
+          select: {
+            firstName: true,
+            lastName: true,
+            phone: true,
+            roomNumber: true,
+          },
+        },
         bookings: {
+          select: {
+            id: true,
+            roomType: true,
+            roomNumber: true,
+            checkInDate: true,
+            checkOutDate: true,
+            numberOfGuests: true,
+            bookingReference: true,
+            totalAmount: true,
+          },
           where: {
             hotelId,
           },
@@ -78,13 +97,14 @@ export const validateToken = cache(async (token: string, hotelId: string) => {
       return null;
     }
 
-    // Return with the first booking (most recent)
-    return {
+    const result = {
       ...tokenData,
       booking: tokenData.bookings[0] || null,
     };
+
+    return result;
   } catch (error) {
-    console.error('[validateToken] Error:', error);
+    console.error('[validateToken] Database query error:', error);
     return null;
   }
 });

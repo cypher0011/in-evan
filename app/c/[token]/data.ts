@@ -22,5 +22,9 @@ export const getValidatedData = cache(async (token: string) => {
     notFound();
   }
 
-  return { hotel, tokenData };
+  // Type assertion to ensure TypeScript knows these are non-null
+  return {
+    hotel: hotel as NonNullable<typeof hotel>,
+    tokenData: tokenData as NonNullable<typeof tokenData>
+  };
 });
