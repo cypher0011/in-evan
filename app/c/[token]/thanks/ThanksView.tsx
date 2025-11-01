@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 import {
   CheckCircle2,
   Sparkles,
@@ -28,29 +27,6 @@ type ThanksViewProps = {
   };
 };
 
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.2,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 100,
-    },
-  },
-};
-
 export default function ThanksView({ bookingData }: ThanksViewProps) {
   const router = useRouter();
   const { t, locale, changeLanguage, isRTL } = useTranslations();
@@ -65,57 +41,15 @@ export default function ThanksView({ bookingData }: ThanksViewProps) {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="/hotel_bg_test.jpeg"
-          alt="Hotel Background"
-          fill
-          priority
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-      </div>
-
       {/* Language Switcher - Always on the right */}
       <div className="fixed top-6 right-6 z-30">
         <LanguageSwitcher currentLanguage={locale} onLanguageChange={(language) => changeLanguage(language.code)} />
       </div>
 
-      {/* Confetti Effect */}
-      {showConfetti && (
-        <div className="absolute inset-0 z-20 pointer-events-none">
-          {[...Array(50)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-2 h-2 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full"
-              initial={{
-                x: Math.random() * window.innerWidth,
-                y: -20,
-                opacity: 1,
-              }}
-              animate={{
-                y: window.innerHeight + 20,
-                opacity: 0,
-              }}
-              transition={{
-                duration: 2 + Math.random() * 2,
-                delay: Math.random() * 0.5,
-              }}
-            />
-          ))}
-        </div>
-      )}
-
       {/* Content */}
-      <motion.div
-        className="relative z-10 flex flex-col min-h-screen px-6 py-12 text-white"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      <div className="relative flex flex-col min-h-screen px-6 py-12 text-white animate-in fade-in duration-500">
         {/* Logo */}
-        <motion.div className="flex justify-center mb-8" variants={itemVariants}>
+        <div className="flex justify-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
           <Image
             src="/movenpick_logo.png"
             alt="Movenpick Hotel"
@@ -124,46 +58,24 @@ export default function ThanksView({ bookingData }: ThanksViewProps) {
             priority
             className="object-contain"
           />
-        </motion.div>
+        </div>
 
-        {/* Success Icon with Animation */}
-        <motion.div
-          className="flex justify-center mb-6"
-          variants={itemVariants}
-        >
-          <motion.div
-            className="relative"
-            animate={{
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 0.6,
-              times: [0, 0.5, 1],
-            }}
-          >
+        {/* Success Icon */}
+        <div className="flex justify-center mb-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+          <div className="relative animate-in zoom-in-95 duration-600">
             <div className="w-24 h-24 bg-green-500/20 rounded-full flex items-center justify-center backdrop-blur-sm border-2 border-green-400">
               <CheckCircle2 className="w-12 h-12 text-green-400" />
             </div>
-            <motion.div
-              className="absolute -top-2 -right-2"
-              animate={{
-                rotate: [0, 10, -10, 0],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                repeatDelay: 1,
-              }}
-            >
+            <div className="absolute -top-2 -right-2 animate-pulse">
               <Sparkles className="w-8 h-8 text-amber-400" />
-            </motion.div>
-          </motion.div>
-        </motion.div>
+            </div>
+          </div>
+        </div>
 
         {/* Main Content */}
         <div className="max-w-2xl mx-auto w-full space-y-6">
           {/* Success Message */}
-          <motion.div variants={itemVariants} className="text-center space-y-3">
+          <div className="text-center space-y-3 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
             <h1 className="text-4xl md:text-5xl font-bold text-green-400">
               {t('thanks.title')}
             </h1>
@@ -173,13 +85,10 @@ export default function ThanksView({ bookingData }: ThanksViewProps) {
             <p className="text-white/80 text-lg">
               {t('thanks.subtitle')}
             </p>
-          </motion.div>
+          </div>
 
           {/* Booking Confirmation Card */}
-          <motion.div
-            className="backdrop-blur-md bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl"
-            variants={itemVariants}
-          >
+          <div className="backdrop-blur-md bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
             <h2 className="text-xl font-bold mb-4 text-center">
               {t('thanks.bookingConfirmation')}
             </h2>
@@ -220,13 +129,10 @@ export default function ThanksView({ bookingData }: ThanksViewProps) {
                 </div>
               </>
             )}
-          </motion.div>
+          </div>
 
           {/* What's Next Card */}
-          <motion.div
-            className="backdrop-blur-md bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl p-6 border border-blue-400/30 shadow-xl"
-            variants={itemVariants}
-          >
+          <div className="backdrop-blur-md bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-2xl p-6 border border-blue-400/30 shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-700">
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-amber-400" />
               {t('thanks.whatsNext')}
@@ -253,13 +159,13 @@ export default function ThanksView({ bookingData }: ThanksViewProps) {
                 <p>24/7 concierge service available at your convenience</p>
               </div> */}
             </div>
-          </motion.div>
+          </div>
 
           {/* CTA - Guest Portal Access */}
-          <motion.div variants={itemVariants} className="pt-4 space-y-4">
+          <div className="pt-4 space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-[900ms]">
             <button
               onClick={() => router.push('/guest-app')}
-              className="w-full bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold py-4 px-6 rounded-full hover:from-amber-500 hover:to-orange-600 transition-all duration-300 shadow-xl flex items-center justify-center gap-2 text-lg"
+              className="w-full bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold py-4 px-6 rounded-full hover:from-amber-500 hover:to-orange-600 transition-all duration-300 shadow-xl flex items-center justify-center gap-2 text-lg hover:scale-[1.02] active:scale-[0.98]"
             >
               <Sparkles className="w-5 h-5" />
               {t('thanks.accessPortal')}
@@ -269,17 +175,14 @@ export default function ThanksView({ bookingData }: ThanksViewProps) {
             {/* <p className="text-center text-white/70 text-sm">
               Manage your entire stay from one convenient place
             </p> */}
-          </motion.div>
+          </div>
 
           {/* Footer Note */}
-          <motion.div
-            variants={itemVariants}
-            className="text-center text-white/60 text-sm pt-6 border-t border-white/10"
-          >
+          <div className="text-center text-white/60 text-sm pt-6 border-t border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-[1100ms]">
             <p>{t('thanks.emailSent')}</p>
-          </motion.div>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

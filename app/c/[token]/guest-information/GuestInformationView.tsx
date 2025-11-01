@@ -93,18 +93,6 @@ export default function GuestInformationView({
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden pb-32">
-      {/* Background Image with Gradient Overlay */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="/hotel_bg_test.jpeg"
-          alt="Hotel Background"
-          fill
-          priority
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
-      </div>
-
       {/* Language Switcher - Always on the right */}
       <div className="absolute top-6 right-6 z-50">
         <LanguageSwitcher
@@ -114,7 +102,7 @@ export default function GuestInformationView({
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col min-h-screen px-6 py-12 text-white animate-in fade-in duration-500">
+      <div className="relative flex flex-col min-h-screen px-6 py-12 text-white animate-in fade-in duration-500">
         {/* Logo */}
         <div className="mb-8 flex justify-center animate-in fade-in slide-in-from-top-4 duration-700">
           <Image

@@ -1,9 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Gift,
   X,
@@ -24,47 +23,6 @@ type Service = {
 
 type EnhanceStayViewProps = {
   token: string;
-};
-
-// Animation variants
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 100,
-    },
-  },
-};
-
-const modalVariants = {
-  hidden: { opacity: 0, scale: 0.8 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 300,
-      damping: 25,
-    },
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.8,
-    transition: { duration: 0.2 },
-  },
 };
 
 export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
@@ -125,12 +83,15 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
     // },
   ];
 
-  // Calculate total
-  const totalItems = Object.values(selectedServices).reduce((sum, qty) => sum + qty, 0);
-  const totalPrice = Object.entries(selectedServices).reduce((sum, [id, qty]) => {
-    const service = services.find(s => s.id === id);
-    return sum + (service?.price || 0) * qty;
-  }, 0);
+  // Calculate total with memoization for performance
+  const { totalItems, totalPrice } = useMemo(() => {
+    const items = Object.values(selectedServices).reduce((sum, qty) => sum + qty, 0);
+    const price = Object.entries(selectedServices).reduce((sum, [id, qty]) => {
+      const service = services.find(s => s.id === id);
+      return sum + (service?.price || 0) * qty;
+    }, 0);
+    return { totalItems: items, totalPrice: price };
+  }, [selectedServices, services]);
 
   const handleAddService = (serviceId: string) => {
     setSelectedServices(prev => ({
@@ -161,103 +122,59 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden pb-32">
-      {/* Background Image with Gradient Overlay */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="/hotel_bg_test.jpeg"
-          alt="Hotel Background"
-          fill
-          priority
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
-      </div>
-
       {/* Language Switcher - Always on the right */}
       <div className="fixed top-6 right-6 z-20">
         <LanguageSwitcher currentLanguage={locale} onLanguageChange={(language) => changeLanguage(language.code)} />
       </div>
 
       {/* Gift Popup */}
-      <AnimatePresence>
-        {showGiftPopup && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center px-6"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
-            {/* Backdrop */}
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowGiftPopup(false)} />
+      {showGiftPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6 animate-in fade-in duration-300">
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowGiftPopup(false)} />
 
-            {/* Popup Card */}
-            <motion.div
-              className="relative backdrop-blur-xl bg-white/10 rounded-3xl p-8 border border-white/20 shadow-2xl max-w-md w-full"
-              variants={modalVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
+          {/* Popup Card */}
+          <div className="relative backdrop-blur-xl bg-white/10 rounded-3xl p-8 border border-white/20 shadow-2xl max-w-md w-full animate-in zoom-in-95 fade-in duration-500">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowGiftPopup(false)}
+              className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors"
             >
-              {/* Close Button */}
-              <button
-                onClick={() => setShowGiftPopup(false)}
-                className="absolute top-4 right-4 text-white/60 hover:text-white transition-colors"
-              >
-                <X className="w-6 h-6" />
-              </button>
+              <X className="w-6 h-6" />
+            </button>
 
-              {/* Gift Icon with Animation */}
-              <motion.div
-                className="flex justify-center mb-6"
-                animate={{
-                  rotate: [0, -10, 10, -10, 0],
-                  scale: [1, 1.1, 1],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  repeatDelay: 1,
-                }}
-              >
-                <div className="w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                  <Gift className="w-12 h-12 text-white" />
-                </div>
-              </motion.div>
-
-              {/* Text */}
-              <div className="text-center space-y-3">
-                <h2 className="text-3xl font-bold text-white">
-                  {t('enhanceStay.giftTitle')}
-                </h2>
-                <p className="text-white/80 text-lg leading-relaxed">
-                  {t('enhanceStay.giftMessage')}
-                </p>
+            {/* Gift Icon */}
+            <div className="flex justify-center mb-6">
+              <div className="w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                <Gift className="w-12 h-12 text-white" />
               </div>
+            </div>
 
-              {/* CTA Button */}
-              <button
-                onClick={() => setShowGiftPopup(false)}
-                className="mt-8 w-full bg-[#F3EFE9] text-gray-900 font-bold py-4 px-6 rounded-full hover:bg-[#E8E4DD] transition-all duration-300 hover:scale-[1.02] shadow-xl"
-              >
-                {t('enhanceStay.exploreServices')}
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {/* Text */}
+            <div className="text-center space-y-3">
+              <h2 className="text-3xl font-bold text-white">
+                {t('enhanceStay.giftTitle')}
+              </h2>
+              <p className="text-white/80 text-lg leading-relaxed">
+                {t('enhanceStay.giftMessage')}
+              </p>
+            </div>
+
+            {/* CTA Button */}
+            <button
+              onClick={() => setShowGiftPopup(false)}
+              className="mt-8 w-full bg-[#F3EFE9] text-gray-900 font-bold py-4 px-6 rounded-full hover:bg-[#E8E4DD] transition-all duration-300 hover:scale-[1.02] shadow-xl"
+            >
+              {t('enhanceStay.exploreServices')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
-      <motion.div
-        className="relative z-10 flex flex-col min-h-screen px-6 py-12 text-white"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      <div className="relative flex flex-col min-h-screen px-6 py-12 text-white animate-in fade-in duration-500">
         {/* Logo */}
-        <motion.div
-          className="mb-8 flex justify-center"
-          variants={itemVariants}
-        >
+        <div className="mb-8 flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
           <Image
             src="/movenpick_logo.png"
             alt="Movenpick Hotel"
@@ -266,17 +183,17 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
             priority
             className="object-contain"
           />
-        </motion.div>
+        </div>
 
         {/* Page Title */}
-        <motion.div variants={itemVariants} className="text-center mb-8">
+        <div className="text-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
           <h1 className="text-4xl md:text-5xl font-bold mb-3">
             {t('enhanceStay.title')}
           </h1>
           <p className="text-white/80 text-lg">
             {t('enhanceStay.subtitle')}
           </p>
-        </motion.div>
+        </div>
 
         {/* Services Grid */}
         <div className="max-w-6xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -284,23 +201,13 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
             const quantity = selectedServices[service.id] || 0;
 
             return (
-              <motion.div
+              <div
                 key={service.id}
-                className="group relative h-[400px] overflow-hidden rounded-2xl"
-                variants={itemVariants}
-                whileHover="hover"
-                initial="rest"
-                animate="rest"
+                className="group relative h-[400px] overflow-hidden rounded-2xl animate-in fade-in slide-in-from-bottom-4 duration-700"
+                style={{ animationDelay: `${300 + index * 150}ms` }}
               >
                 {/* Background Image with Hover Zoom */}
-                <motion.div
-                  className="absolute inset-0"
-                  variants={{
-                    rest: { scale: 1 },
-                    hover: { scale: 1.1 },
-                  }}
-                  transition={{ duration: 0.5, ease: 'easeOut' }}
-                >
+                <div className="absolute inset-0 transition-transform duration-500 group-hover:scale-110">
                   <Image
                     src={service.image}
                     alt={service.name}
@@ -310,7 +217,7 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
                   />
                   {/* Gradient Overlay for better text readability */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
-                </motion.div>
+                </div>
 
                 {/* Glassmorphic Info Panel */}
                 <div className="absolute bottom-0 left-0 right-0 p-4">
@@ -360,19 +267,14 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
                     </div>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </div>
-      </motion.div>
+      </div>
 
       {/* Sticky Bottom Bar */}
-      <motion.div
-        className="fixed bottom-0 left-0 right-0 z-20 bg-black/80 backdrop-blur-xl border-t border-white/20 px-6 py-4"
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
+      <div className="fixed bottom-0 left-0 right-0 z-20 bg-black/80 backdrop-blur-xl border-t border-white/20 px-6 py-4 animate-in slide-in-from-bottom fade-in duration-500 delay-500">
         <div className="max-w-6xl mx-auto">
           {/* Summary */}
           {totalItems > 0 && (
@@ -402,7 +304,7 @@ export default function EnhanceStayView({ token }: EnhanceStayViewProps) {
             </button>
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

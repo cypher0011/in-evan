@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 import { Calendar, Users, Moon, Sparkles } from 'lucide-react';
 import { useTranslations } from '@/lib/i18n/useTranslations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -23,29 +22,6 @@ type BookingDetailsViewProps = {
   booking: BookingData;
 };
 
-// Animation variants matching welcome page
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.2,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 100,
-    },
-  },
-};
-
 export default function BookingDetailsView({
   token,
   booking,
@@ -59,36 +35,15 @@ export default function BookingDetailsView({
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
-      {/* Background Image with Gradient Overlay - Same as welcome page */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="/hotel_bg_test.jpeg"
-          alt="Hotel Background"
-          fill
-          priority
-          className="object-cover"
-        />
-        {/* Black gradient from bottom - subtle overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
-      </div>
-
       {/* Language Switcher - Always on the right */}
       <div className="fixed top-6 right-6 z-20">
         <LanguageSwitcher currentLanguage={locale} onLanguageChange={(language) => changeLanguage(language.code)} />
       </div>
 
       {/* Content */}
-      <motion.div
-        className="relative z-10 flex flex-col min-h-screen px-6 py-12 text-white"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      <div className="relative flex flex-col min-h-screen px-6 py-12 text-white animate-in fade-in duration-500">
         {/* Logo - Same as welcome page */}
-        <motion.div
-          className="mb-8 flex justify-center"
-          variants={itemVariants}
-        >
+        <div className="mb-8 flex justify-center animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
           <Image
             src="/movenpick_logo.png"
             alt="Movenpick Hotel"
@@ -97,25 +52,22 @@ export default function BookingDetailsView({
             priority
             className="object-contain"
           />
-        </motion.div>
+        </div>
 
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col justify-center max-w-xl mx-auto w-full space-y-6">
           {/* Page Title */}
-          <motion.div variants={itemVariants}>
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
             <h1 className="text-4xl md:text-5xl font-bold mb-2">
               {t('bookingDetails.title')}
             </h1>
             <p className="text-white/80 text-lg">
               {t('bookingDetails.subtitle')}
             </p>
-          </motion.div>
+          </div>
 
           {/* Booking Details Card - Glassmorphism */}
-          <motion.div
-            className="backdrop-blur-md bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl space-y-4"
-            variants={itemVariants}
-          >
+          <div className="backdrop-blur-md bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
             {/* Booking ID Pill */}
             <div className="inline-flex items-center bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full border border-white/30">
               <span className="text-sm font-semibold tracking-wide">
@@ -172,13 +124,10 @@ export default function BookingDetailsView({
                 <p className="text-lg font-semibold">{booking.guests}</p>
               </div>
             </div>
-          </motion.div>
+          </div>
 
           {/* Upgrade Offer Card - Enhanced Design */}
-          <motion.div
-            className="backdrop-blur-md bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-2xl p-1 border border-amber-400/30 shadow-xl overflow-hidden"
-            variants={itemVariants}
-          >
+          <div className="backdrop-blur-md bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-2xl p-1 border border-amber-400/30 shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
             <div className="relative bg-black/30 backdrop-blur-sm rounded-xl overflow-hidden">
               {/* Premium Badge */}
               <div className="absolute top-3 right-3 z-10 bg-amber-400 text-black px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide flex items-center gap-1">
@@ -192,6 +141,7 @@ export default function BookingDetailsView({
                   src="/delux_room.jpeg"
                   alt="Deluxe King Room"
                   fill
+                  sizes="(max-width: 768px) 90vw, 50vw"
                   className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -219,29 +169,24 @@ export default function BookingDetailsView({
                 </button>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* Continue Button - Same style as welcome page */}
-        <motion.div variants={itemVariants} className="pt-8">
+        <div className="pt-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-700">
           <button
             onClick={handleContinue}
             className="block w-full bg-[#F3EFE9] text-gray-900 text-center font-semibold text-lg py-4 rounded-full transition-all duration-300 hover:bg-[#E8E4DD] hover:scale-[1.02] shadow-xl"
           >
             {t('bookingDetails.continue')}
           </button>
-        </motion.div>
+        </div>
 
         {/* Footer - Made by Evan */}
-        <motion.div
-          className="text-center text-white/50 text-xs tracking-wider mt-6"
-          variants={itemVariants}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0, transition: { delay: 1.2 } }}
-        >
+        <div className="text-center text-white/50 text-xs tracking-wider mt-6 animate-in fade-in slide-in-from-bottom-2 duration-700 delay-[1200ms]">
           Made with ❤️ by <span className="text-white font-semibold">Evan</span>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </div>
   );
 }

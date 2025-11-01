@@ -2,7 +2,6 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { Apple, CreditCard, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useTranslations } from '@/lib/i18n/useTranslations';
@@ -20,29 +19,6 @@ type ServiceItem = {
 type PaymentViewProps = {
   token: string;
   services: ServiceItem[];
-};
-
-// --- ANIMATION VARIANTS ---
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      type: 'spring' as const,
-      stiffness: 100,
-    },
-  },
 };
 
 // --- MAIN COMPONENT ---
@@ -77,32 +53,15 @@ export default function PaymentView({
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden text-white">
-      {/* Background */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="/hotel_bg_test.jpeg"
-          alt="Hotel Background"
-          fill
-          priority
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
-      </div>
-
       {/* Language Switcher - Always on the right */}
       <div className="fixed top-6 right-6 z-20">
         <LanguageSwitcher currentLanguage={locale} onLanguageChange={(language) => changeLanguage(language.code)} />
       </div>
 
       {/* Content */}
-      <motion.div
-        className="relative z-10 flex flex-col min-h-screen px-6 py-12"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
+      <div className="relative flex flex-col min-h-screen px-6 py-12 animate-in fade-in duration-500">
         {/* Logo */}
-        <motion.div className="flex justify-center mb-8" variants={itemVariants}>
+        <div className="flex justify-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
           <Image
             src="/movenpick_logo.png"
             alt="Movenpick Hotel"
@@ -111,26 +70,23 @@ export default function PaymentView({
             priority
             className="object-contain"
           />
-        </motion.div>
+        </div>
 
-        <motion.div variants={itemVariants} className="text-center mb-8">
+        <div className="text-center mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
           <h1 className="text-4xl md:text-5xl font-bold mb-3">
             {hasPayment ? t('payment.titleWithPayment') : t('payment.titleNoPayment')}
           </h1>
           <p className="text-white/80 text-lg">
             {hasPayment ? t('payment.subtitleWithPayment') : t('payment.subtitleNoPayment')}
           </p>
-        </motion.div>
+        </div>
 
         {/* Main Content Area */}
         <div className="w-full max-w-2xl mx-auto space-y-6">
           {hasPayment ? (
             <>
               {/* Order Summary Card */}
-              <motion.div
-                className="backdrop-blur-md bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl"
-                variants={itemVariants}
-              >
+              <div className="backdrop-blur-md bg-white/10 rounded-2xl p-6 border border-white/20 shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
                 <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
                   <CheckCircle2 className="w-6 h-6 text-green-400" />
                   {t('payment.orderSummary')}
@@ -164,22 +120,20 @@ export default function PaymentView({
                     <p className="text-amber-300">{formatCurrency(total)}</p>
                   </div>
                 </div>
-              </motion.div>
+              </div>
 
               {/* Payment Method */}
-              <motion.div variants={itemVariants} className="space-y-4">
+              <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
                 <h2 className="text-xl font-semibold text-center">{t('payment.paymentMethod')}</h2>
 
                 {/* Apple Pay Button */}
-                <motion.button
+                <button
                   onClick={handlePayment}
-                  className="w-full bg-black text-white text-lg font-semibold py-4 rounded-xl flex items-center justify-center gap-2 border-2 border-white/50 shadow-lg"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  className="w-full bg-black text-white text-lg font-semibold py-4 rounded-xl flex items-center justify-center gap-2 border-2 border-white/50 shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                 >
                   <Apple className="h-7 w-7" />
                   <span>Pay</span>
-                </motion.button>
+                </button>
 
                 {/* Divider */}
                 <div className="flex items-center gap-4">
@@ -203,14 +157,11 @@ export default function PaymentView({
                     </div>
                   </div>
                 </button>
-              </motion.div>
+              </div>
             </>
           ) : (
             // No Payment Required
-            <motion.div
-              className="backdrop-blur-md bg-white/10 rounded-2xl p-8 text-center border border-white/20 shadow-xl"
-              variants={itemVariants}
-            >
+            <div className="backdrop-blur-md bg-white/10 rounded-2xl p-8 text-center border border-white/20 shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
               <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle2 className="w-10 h-10 text-green-400" />
               </div>
@@ -218,27 +169,22 @@ export default function PaymentView({
               <p className="text-white/80 mb-6 leading-relaxed">
                 {t('payment.subtitleNoPayment')}
               </p>
-              <motion.button
+              <button
                 onClick={() => router.push(`/c/${token}/thanks`)}
-                className="w-full bg-[#F3EFE9] text-gray-900 font-bold py-4 rounded-full hover:bg-[#E8E4DD] transition-all duration-300 shadow-xl"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                className="w-full bg-[#F3EFE9] text-gray-900 font-bold py-4 rounded-full hover:bg-[#E8E4DD] transition-all duration-300 shadow-xl hover:scale-[1.02] active:scale-[0.98]"
               >
                 {t('payment.completeCheckIn')}
-              </motion.button>
-            </motion.div>
+              </button>
+            </div>
           )}
 
           {/* Security Footer */}
-          <motion.div
-            className="flex items-center justify-center gap-2 mt-8 text-sm text-white/70"
-            variants={itemVariants}
-          >
+          <div className="flex items-center justify-center gap-2 mt-8 text-sm text-white/70 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-700">
             <ShieldCheck className="h-5 w-5 text-green-400" />
             <p>{t('payment.secureNote')}</p>
-          </motion.div>
+          </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

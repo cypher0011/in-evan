@@ -1,5 +1,7 @@
+import { Suspense } from 'react';
 import { getValidatedData } from '../data';
-import TermsView from './TermsView'; // The new client component
+import TermsView from './TermsView';
+import Loading from '../loading';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +12,7 @@ async function fetchHotelTerms(hotelId: string): Promise<string> {
   // In a real app, you would do:
   // const terms = await db.terms.findFirst({ where: { hotelId } });
   // return terms?.text || "Default terms not found.";
-  
+
   // Returning detailed mock data for this example.
   return `
 hello_world`;
@@ -22,8 +24,7 @@ type TermsPageProps = {
   }>;
 };
 
-export default async function TermsPage({ params }: TermsPageProps) {
-  const { token } = await params;
+async function TermsContent({ token }: { token: string }) {
   const { hotel } = await getValidatedData(token);
 
   // Fetch the dynamic T&C text
@@ -33,8 +34,17 @@ export default async function TermsPage({ params }: TermsPageProps) {
     <TermsView
       token={token}
       hotelName={hotel.name}
-      termsText={termsText} // Pass the fetched terms to the client
+      termsText={termsText}
     />
   );
-  
+}
+
+export default async function TermsPage({ params }: TermsPageProps) {
+  const { token } = await params;
+
+  return (
+    <Suspense fallback={<Loading />}>
+      <TermsContent token={token} />
+    </Suspense>
+  );
 }

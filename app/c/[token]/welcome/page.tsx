@@ -1,5 +1,7 @@
+import { Suspense } from 'react';
 import { getValidatedData } from '../data';
 import WelcomeView from './WelcomeView';
+import Loading from '../loading';
 
 /**
  * Welcome Page - First step in check-in flow
@@ -9,12 +11,7 @@ import WelcomeView from './WelcomeView';
 
 export const dynamic = 'force-dynamic';
 
-export default async function WelcomePage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
-  const { token } = await params;
+async function WelcomeContent({ token }: { token: string }) {
   const { tokenData } = await getValidatedData(token);
 
   // Get guest and booking data
@@ -33,7 +30,19 @@ export default async function WelcomePage({
       }
     : null;
 
+  return <WelcomeView token={token} guestName={guestName} booking={bookingData} />;
+}
+
+export default async function WelcomePage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = await params;
+
   return (
-    <WelcomeView token={token} guestName={guestName} booking={bookingData} />
+    <Suspense fallback={<Loading />}>
+      <WelcomeContent token={token} />
+    </Suspense>
   );
 }

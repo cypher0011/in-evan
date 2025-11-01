@@ -1,5 +1,7 @@
+import { Suspense } from 'react';
 import { getValidatedData } from '../data';
 import GuestInformationView from './GuestInformationView';
+import Loading from '../loading';
 
 /**
  * Guest Information Page - Fifth step in check-in flow
@@ -9,12 +11,7 @@ import GuestInformationView from './GuestInformationView';
 
 export const dynamic = 'force-dynamic';
 
-export default async function GuestInformationPage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
-  const { token } = await params;
+async function GuestInformationContent({ token }: { token: string }) {
   const { tokenData } = await getValidatedData(token);
 
   // Get guest data from token
@@ -28,4 +25,18 @@ export default async function GuestInformationPage({
   };
 
   return <GuestInformationView token={token} guestData={guestData} />;
+}
+
+export default async function GuestInformationPage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = await params;
+
+  return (
+    <Suspense fallback={<Loading />}>
+      <GuestInformationContent token={token} />
+    </Suspense>
+  );
 }

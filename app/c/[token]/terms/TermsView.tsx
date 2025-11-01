@@ -2,13 +2,19 @@
 
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import SignatureCanvas from 'react-signature-canvas';
+import dynamic from 'next/dynamic';
 import ConsentItem from './ConsentItem';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Image from 'next/image';
 import { useTranslations } from '@/lib/i18n/useTranslations';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+
+// Lazy-load SignatureCanvas - it's heavy and only used on this page
+const SignatureCanvas = dynamic(() => import('react-signature-canvas'), {
+  ssr: false,
+  loading: () => <div className="w-full h-32 rounded-lg bg-slate-700/50 animate-pulse" />,
+});
 
 type TermsViewProps = {
   token: string;
@@ -47,22 +53,6 @@ export default function TermsView({ token, hotelName, termsText }: TermsViewProp
 
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
-      {/* Background Image with Gradient Overlay */}
-      <div className="absolute inset-0 z-0">
-        <Image
-          src="/hotel_bg_test.jpeg"
-          alt="Hotel Background"
-          fill
-          priority
-          quality={60}
-          sizes="100vw"
-          placeholder="blur"
-          blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWEREiMxUf/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
-      </div>
-
       {/* Language Switcher - Always on the right */}
       <div className="fixed top-6 right-6 z-20">
         <LanguageSwitcher currentLanguage={locale} onLanguageChange={(language) => changeLanguage(language.code)} />

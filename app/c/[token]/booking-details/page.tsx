@@ -1,6 +1,8 @@
+import { Suspense } from 'react';
 import { getValidatedData } from '../data';
 import BookingDetailsView from './BookingDetailsView';
 import { redirect } from 'next/navigation';
+import Loading from '../loading';
 
 /**
  * Booking Details Page - Third step in check-in flow
@@ -10,12 +12,7 @@ import { redirect } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
 
-export default async function BookingDetailsPage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
-  const { token } = await params;
+async function BookingDetailsContent({ token }: { token: string }) {
   const { hotel, tokenData } = await getValidatedData(token);
 
   // Get booking data
@@ -67,4 +64,18 @@ export default async function BookingDetailsPage({
   };
 
   return <BookingDetailsView token={token} booking={bookingData} />;
+}
+
+export default async function BookingDetailsPage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
+  const { token } = await params;
+
+  return (
+    <Suspense fallback={<Loading />}>
+      <BookingDetailsContent token={token} />
+    </Suspense>
+  );
 }
