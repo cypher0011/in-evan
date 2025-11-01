@@ -1,31 +1,10 @@
-import { Suspense } from 'react';
-import { getValidatedData } from '../data';
-import GuestInformationView from './GuestInformationView';
-import Loading from '../loading';
+import GuestInformationClient from './GuestInformationClient';
 
 /**
  * Guest Information Page - Fifth step in check-in flow
- * Guest enters personal details
+ * Now uses cached data from context
  * Route: /c/[token]/guest-information
  */
-
-export const dynamic = 'force-dynamic';
-
-async function GuestInformationContent({ token }: { token: string }) {
-  const { tokenData } = await getValidatedData(token);
-
-  // Get guest data from token
-  const guest = tokenData.guest;
-
-  const guestData = {
-    firstName: guest.firstName,
-    lastName: guest.lastName,
-    phone: guest.phone,
-    roomNumber: guest.roomNumber,
-  };
-
-  return <GuestInformationView token={token} guestData={guestData} />;
-}
 
 export default async function GuestInformationPage({
   params,
@@ -34,9 +13,5 @@ export default async function GuestInformationPage({
 }) {
   const { token } = await params;
 
-  return (
-    <Suspense fallback={<Loading />}>
-      <GuestInformationContent token={token} />
-    </Suspense>
-  );
+  return <GuestInformationClient token={token} />;
 }

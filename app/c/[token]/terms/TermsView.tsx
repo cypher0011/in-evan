@@ -14,7 +14,7 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 const SignatureCanvas = dynamic(() => import('react-signature-canvas'), {
   ssr: false,
   loading: () => <div className="w-full h-32 rounded-lg bg-slate-700/50 animate-pulse" />,
-});
+}) as any;
 
 type TermsViewProps = {
   token: string;
@@ -24,7 +24,7 @@ type TermsViewProps = {
 
 export default function TermsView({ token, hotelName, termsText }: TermsViewProps) {
   const router = useRouter();
-  const sigCanvas = useRef<SignatureCanvas>(null);
+  const sigCanvas = useRef<any>(null);
   const { t, locale, changeLanguage, isRTL } = useTranslations();
 
   const [termsAccepted, setTermsAccepted] = useState(false);

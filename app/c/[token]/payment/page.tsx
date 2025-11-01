@@ -1,12 +1,10 @@
-import { getValidatedData } from '../data';
-import PaymentView from './PaymentView';
+import PaymentClient from './PaymentClient';
 
 /**
  * Payment Page - Process payment for booking + enhancements
+ * Now uses cached data from context
  * Route: /c/[token]/payment
  */
-
-export const dynamic = 'force-dynamic';
 
 export default async function PaymentPage({
   params,
@@ -14,11 +12,6 @@ export default async function PaymentPage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  await getValidatedData(token);
 
-  // TODO: Fetch selected enhancements from session/database
-  // For now, show empty services (no payment required)
-  const services: any[] = [];
-
-  return <PaymentView token={token} services={services} />;
+  return <PaymentClient token={token} />;
 }
