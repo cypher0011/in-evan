@@ -78,19 +78,16 @@ export async function POST(request: Request) {
       firstName,
       lastName,
       phone,
-      email,
       roomNumber,
-      dateOfBirth,
-      nationality,
-      idType,
-      idNumber,
-      status,
+      numberOfGuests,
       checkInDate,
       checkOutDate,
+      availableRoomUpgrades,
+      selectedEnhancementIds,
       hotelId,
     } = body;
 
-    if (!firstName || !lastName || !phone || !roomNumber || !dateOfBirth || !nationality || !idType || !idNumber || !checkInDate || !checkOutDate || !hotelId) {
+    if (!firstName || !lastName || !phone || !roomNumber || !checkInDate || !checkOutDate || !hotelId) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -125,7 +122,13 @@ export async function POST(request: Request) {
     const expiresAt = new Date(checkOutDate);
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // Create guest and token in a transaction
+    // Get hotel name
+    const hotel = await prisma.hotel.findUnique({
+      where: { id: hotelId },
+      select: { name: true },
+    });
+
+    // Create guest, token, and booking in a transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create guest
       const guest = await tx.guest.create({
@@ -133,14 +136,8 @@ export async function POST(request: Request) {
           firstName,
           lastName,
           phone,
-          email: email || null,
           roomNumber,
-          dateOfBirth: new Date(dateOfBirth),
-          nationality,
-          iqama: idType === 'iqama' ? idNumber : null,
-          passport: idType === 'passport' ? idNumber : null,
-          nationalId: idType === 'national_id' ? idNumber : null,
-          status: status || 'Confirmed',
+          status: 'active',
           hotelId,
         },
       });
@@ -158,7 +155,32 @@ export async function POST(request: Request) {
         },
       });
 
-      return { guest, guestToken };
+      // Create booking
+      // Store available room upgrades as JSON array in a preferences field
+      const bookingPreferences = {
+        availableRoomUpgrades: availableRoomUpgrades || [],
+        selectedEnhancementIds: selectedEnhancementIds || [],
+      };
+
+      const booking = await tx.booking.create({
+        data: {
+          guestId: guest.id,
+          hotelId,
+          tokenId: guestToken.id,
+          roomNumber,
+          roomType: null, // Will be selected by guest if upgrades offered
+          checkInDate: new Date(checkInDate),
+          checkOutDate: new Date(checkOutDate),
+          numberOfGuests: numberOfGuests || 1,
+          bookingReference: 'BK' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+          baseAmount: 0,
+          enhancementsAmount: 0,
+          status: 'pending',
+          notes: JSON.stringify(bookingPreferences), // Store preferences in notes for now
+        },
+      });
+
+      return { guest, guestToken, booking };
     });
 
     return NextResponse.json({
@@ -169,6 +191,7 @@ export async function POST(request: Request) {
         lastName: result.guest.lastName,
       },
       token: result.guestToken.token,
+      hotelName: hotel?.name || 'Hotel',
     });
   } catch (error) {
     console.error('Error creating guest:', error);

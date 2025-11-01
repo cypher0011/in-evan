@@ -114,6 +114,7 @@ export default function MiniBarManager() {
   const [items, setItems] = React.useState<MiniItem[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [err, setErr] = React.useState<string | null>(null);
+  const [hotelId, setHotelId] = React.useState<string | null>(null);
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [editingItem, setEditingItem] = React.useState<MiniItem | null>(null);
@@ -145,6 +146,20 @@ export default function MiniBarManager() {
   const fetchItems = React.useCallback(async () => {
     setErr(null);
     setLoading(true);
+
+    // Get hotel ID if not already set
+    if (!hotelId) {
+      const { data: hotelData } = await supabase
+        .from("hotels")
+        .select("id")
+        .limit(1)
+        .single();
+
+      if (hotelData) {
+        setHotelId(hotelData.id);
+      }
+    }
+
     const { data, error } = await supabase
       .from("minibar_items")
       .select("*")
@@ -212,6 +227,7 @@ export default function MiniBarManager() {
       stock_quantity: formData.stock_quantity || 0,
       is_visible: formData.is_visible ?? true,
       image_url: formData.image_url || null,
+      hotel_id: hotelId, // Add hotel_id to associate item with hotel
     };
 
     if (editingItem) {

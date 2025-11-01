@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Copy, Check, ExternalLink } from "lucide-react";
+import { Calendar as CalendarIcon, Copy, Check, Send } from "lucide-react";
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -26,29 +27,35 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 
-const COUNTRIES = [
-  "Saudi Arabia", "United Arab Emirates", "Kuwait", "Qatar", "Bahrain", "Oman",
-  "Egypt", "Jordan", "Lebanon", "Iraq", "Syria", "Yemen", "Palestine",
-  "United States", "United Kingdom", "Germany", "France", "Italy", "Spain",
-  "India", "Pakistan", "Bangladesh", "Philippines", "Indonesia",
-  "China", "Japan", "South Korea", "Malaysia", "Singapore", "Thailand",
-  "Australia", "Canada", "Brazil", "Mexico", "Other"
+// Available room upgrades that can be offered to guests
+const ROOM_UPGRADES = [
+  { value: "standard", label: "Standard Room", price: 0, image: "/normal_room.jpeg" },
+  { value: "deluxe", label: "Deluxe Room", price: 150, image: "/normal_room.jpeg" },
+  { value: "suite", label: "Junior Suite", price: 300, image: "/normal_room.jpeg" },
+  { value: "executive", label: "Executive Suite", price: 500, image: "/normal_room.jpeg" },
+  { value: "presidential", label: "Presidential Suite", price: 1000, image: "/normal_room.jpeg" },
 ];
+
+type EnhanceStayOption = {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string;
+  price: number;
+};
 
 type FormData = {
   firstName: string;
   lastName: string;
   phone: string;
-  email: string;
   roomNumber: string;
-  dateOfBirth: Date | undefined;
-  nationality: string;
-  idType: "iqama" | "passport" | "national_id" | "";
-  idNumber: string;
-  status: string;
+  numberOfGuests: number;
   checkInDate: Date | undefined;
   checkOutDate: Date | undefined;
+  availableRoomUpgrades: string[]; // Available room upgrades to offer
+  selectedEnhancementIds: string[];
 };
 
 export default function NewGuestPage() {
@@ -57,23 +64,33 @@ export default function NewGuestPage() {
     firstName: "",
     lastName: "",
     phone: "",
-    email: "",
     roomNumber: "",
-    dateOfBirth: undefined,
-    nationality: "",
-    idType: "",
-    idNumber: "",
-    status: "Confirmed",
+    numberOfGuests: 1,
     checkInDate: undefined,
     checkOutDate: undefined,
+    availableRoomUpgrades: [],
+    selectedEnhancementIds: [],
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<{ token: string; guestName: string } | null>(null);
+  const [success, setSuccess] = useState<{ token: string; guestName: string; hotelName: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [enhanceOptions, setEnhanceOptions] = useState<EnhanceStayOption[]>([]);
   const firstInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Fetch enhance-stay options
   useEffect(() => {
+    const fetchEnhanceOptions = async () => {
+      try {
+        const hotelId = "4b4fc34a-257f-48ac-8d3b-4326495d1425"; // TODO: Get from context
+        const response = await fetch(`/api/admin/enhance-stay-options?hotelId=${hotelId}`);
+        const data = await response.json();
+        setEnhanceOptions(data.options || []);
+      } catch (err) {
+        console.error('Failed to fetch enhance-stay options:', err);
+      }
+    };
+    fetchEnhanceOptions();
     firstInputRef.current?.focus();
   }, []);
 
@@ -92,14 +109,31 @@ export default function NewGuestPage() {
     }
   };
 
+  const toggleEnhancement = (id: string) => {
+    setForm((f) => ({
+      ...f,
+      selectedEnhancementIds: f.selectedEnhancementIds.includes(id)
+        ? f.selectedEnhancementIds.filter((eid) => eid !== id)
+        : [...f.selectedEnhancementIds, id],
+    }));
+  };
+
+  const toggleRoomUpgrade = (value: string) => {
+    setForm((f) => ({
+      ...f,
+      availableRoomUpgrades: f.availableRoomUpgrades.includes(value)
+        ? f.availableRoomUpgrades.filter((v) => v !== value)
+        : [...f.availableRoomUpgrades, value],
+    }));
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     // Validation
     if (!form.firstName.trim() || !form.lastName.trim() || !form.phone.trim() ||
-        !form.roomNumber.trim() || !form.dateOfBirth || !form.nationality ||
-        !form.idType || !form.idNumber.trim() || !form.checkInDate || !form.checkOutDate) {
+        !form.roomNumber.trim() || !form.checkInDate || !form.checkOutDate) {
       setError("Please fill in all required fields.");
       return;
     }
@@ -112,8 +146,7 @@ export default function NewGuestPage() {
     try {
       setLoading(true);
 
-      // TODO: Replace with actual hotel ID from context/session
-      const hotelId = "4b4fc34a-257f-48ac-8d3b-4326495d1425"; // Mövenpick Hotel Riyadh
+      const hotelId = "4b4fc34a-257f-48ac-8d3b-4326495d1425"; // TODO: Get from context
 
       const response = await fetch('/api/admin/guests', {
         method: 'POST',
@@ -124,15 +157,12 @@ export default function NewGuestPage() {
           firstName: form.firstName.trim(),
           lastName: form.lastName.trim(),
           phone: form.phone.trim(),
-          email: form.email.trim() || null,
           roomNumber: form.roomNumber.trim(),
-          dateOfBirth: format(form.dateOfBirth, 'yyyy-MM-dd'),
-          nationality: form.nationality,
-          idType: form.idType,
-          idNumber: form.idNumber.trim(),
-          status: form.status,
+          numberOfGuests: form.numberOfGuests,
           checkInDate: format(form.checkInDate, 'yyyy-MM-dd'),
           checkOutDate: format(form.checkOutDate, 'yyyy-MM-dd'),
+          availableRoomUpgrades: form.availableRoomUpgrades,
+          selectedEnhancementIds: form.selectedEnhancementIds,
           hotelId,
         }),
       });
@@ -146,6 +176,7 @@ export default function NewGuestPage() {
       setSuccess({
         token: data.token,
         guestName: `${data.guest.firstName} ${data.guest.lastName}`,
+        hotelName: data.hotelName || "Mövenpick Hotel",
       });
     } catch (err: any) {
       setError(err.message ?? "Failed to add guest.");
@@ -154,9 +185,25 @@ export default function NewGuestPage() {
     }
   };
 
-  // Success screen
+  // Success screen with WhatsApp
   if (success) {
     const checkoutUrl = `https://movenpick.in-evan.site/c/${success.token}/welcome`;
+    const whatsappMessage = `Dear ${success.guestName},
+
+Welcome to ${success.hotelName}! 🏨
+
+We're excited to host you. Please complete your online check-in using the link below:
+
+${checkoutUrl}
+
+This will help us prepare for your arrival and ensure a smooth check-in experience.
+
+Looking forward to welcoming you!
+
+Best regards,
+${success.hotelName} Team`;
+
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappMessage)}`;
 
     return (
       <SidebarProvider
@@ -209,22 +256,36 @@ export default function NewGuestPage() {
                     >
                       {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => window.open(checkoutUrl, '_blank')}
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
                   </div>
                 </div>
 
-                <Alert>
-                  <AlertDescription>
-                    Send this URL to the guest so they can complete their online check-in before arrival.
-                  </AlertDescription>
-                </Alert>
+                <Separator />
+
+                <div className="space-y-3">
+                  <Label>WhatsApp Message</Label>
+                  <div className="p-4 bg-muted rounded-lg">
+                    <pre className="whitespace-pre-wrap text-sm font-sans">{whatsappMessage}</pre>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      className="flex-1"
+                      onClick={() => copyToClipboard(whatsappMessage)}
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy Message
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="default"
+                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      onClick={() => window.open(whatsappUrl, '_blank')}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Send via WhatsApp
+                    </Button>
+                  </div>
+                </div>
 
                 <div className="flex items-center justify-center gap-3 pt-4">
                   <Button
@@ -240,15 +301,12 @@ export default function NewGuestPage() {
                         firstName: "",
                         lastName: "",
                         phone: "",
-                        email: "",
                         roomNumber: "",
-                        dateOfBirth: undefined,
-                        nationality: "",
-                        idType: "",
-                        idNumber: "",
-                        status: "Confirmed",
+                        numberOfGuests: 1,
                         checkInDate: undefined,
                         checkOutDate: undefined,
+                        availableRoomUpgrades: [],
+                        selectedEnhancementIds: [],
                       });
                     }}
                   >
@@ -320,7 +378,7 @@ export default function NewGuestPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="phone">Phone *</Label>
+                      <Label htmlFor="phone">Phone Number *</Label>
                       <Input
                         id="phone"
                         name="phone"
@@ -328,94 +386,6 @@ export default function NewGuestPage() {
                         value={form.phone}
                         onChange={onChange}
                         placeholder="+966 50 123 4567"
-                        required
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={form.email}
-                        onChange={onChange}
-                        placeholder="optional"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Date of Birth *</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className="w-full justify-start text-left font-normal"
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {form.dateOfBirth ? format(form.dateOfBirth, "PPP") : "Pick a date"}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                          <Calendar
-                            mode="single"
-                            selected={form.dateOfBirth}
-                            onSelect={(date) => setForm((f) => ({ ...f, dateOfBirth: date }))}
-                            initialFocus
-                            captionLayout="dropdown"
-                            fromYear={1940}
-                            toYear={2010}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="nationality">Nationality *</Label>
-                      <Select
-                        value={form.nationality}
-                        onValueChange={(v) => setForm((f) => ({ ...f, nationality: v }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select nationality" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {COUNTRIES.map((country) => (
-                            <SelectItem key={country} value={country}>
-                              {country}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Identification */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-4">Identification</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="idType">ID Type *</Label>
-                      <Select
-                        value={form.idType}
-                        onValueChange={(v) => setForm((f) => ({ ...f, idType: v as any }))}
-                      >
-                        <SelectTrigger id="idType">
-                          <SelectValue placeholder="Select ID type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="iqama">Iqama</SelectItem>
-                          <SelectItem value="passport">Passport</SelectItem>
-                          <SelectItem value="national_id">National ID</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="idNumber">ID Number *</Label>
-                      <Input
-                        id="idNumber"
-                        name="idNumber"
-                        value={form.idNumber}
-                        onChange={onChange}
-                        placeholder="Enter ID number"
                         required
                       />
                     </div>
@@ -438,19 +408,20 @@ export default function NewGuestPage() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="status">Status</Label>
+                      <Label htmlFor="numberOfGuests">Number of Guests *</Label>
                       <Select
-                        value={form.status}
-                        onValueChange={(v) => setForm((f) => ({ ...f, status: v }))}
+                        value={form.numberOfGuests.toString()}
+                        onValueChange={(v) => setForm((f) => ({ ...f, numberOfGuests: parseInt(v) }))}
                       >
-                        <SelectTrigger id="status">
+                        <SelectTrigger id="numberOfGuests">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Confirmed">Confirmed</SelectItem>
-                          <SelectItem value="Checked In">Checked In</SelectItem>
-                          <SelectItem value="Checked Out">Checked Out</SelectItem>
-                          <SelectItem value="Cancelled">Cancelled</SelectItem>
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                            <SelectItem key={num} value={num.toString()}>
+                              {num} {num === 1 ? 'Guest' : 'Guests'}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -501,6 +472,61 @@ export default function NewGuestPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* Room Upgrade Options */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Room Upgrade Options</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Select which room upgrades to offer this guest. If none selected, they won't see upgrade options.
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {ROOM_UPGRADES.map((upgrade) => (
+                      <div key={upgrade.value} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50">
+                        <Checkbox
+                          id={`upgrade-${upgrade.value}`}
+                          checked={form.availableRoomUpgrades.includes(upgrade.value)}
+                          onCheckedChange={() => toggleRoomUpgrade(upgrade.value)}
+                        />
+                        <div className="flex-1">
+                          <Label htmlFor={`upgrade-${upgrade.value}`} className="cursor-pointer font-medium">
+                            {upgrade.label}
+                          </Label>
+                          <p className="text-sm font-semibold mt-1">
+                            {upgrade.price === 0 ? 'Current Room' : `+$${upgrade.price}/night`}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Enhance Stay Options */}
+                {enhanceOptions.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Enhance Stay Options</h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Select services to offer this guest. If none selected, enhance-stay page will be skipped.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {enhanceOptions.map((option) => (
+                        <div key={option.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50">
+                          <Checkbox
+                            id={option.id}
+                            checked={form.selectedEnhancementIds.includes(option.id)}
+                            onCheckedChange={() => toggleEnhancement(option.id)}
+                          />
+                          <div className="flex-1">
+                            <Label htmlFor={option.id} className="cursor-pointer font-medium">
+                              {option.name}
+                            </Label>
+                            <p className="text-sm text-muted-foreground">{option.description}</p>
+                            <p className="text-sm font-semibold mt-1">${option.price}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {error && (
                   <Alert variant="destructive">

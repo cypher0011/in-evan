@@ -43,8 +43,32 @@ export default function TermsView({ token, hotelName, termsText }: TermsViewProp
     if (!sigCanvas.current?.isEmpty()) setIsSigned(true);
   };
 
-  const handleContinue = () => {
-    if (!isContinueDisabled) {
+  const handleContinue = async () => {
+    if (isContinueDisabled) return;
+
+    try {
+      // Get signature data URL
+      const signatureDataUrl = sigCanvas.current?.toDataURL();
+
+      if (signatureDataUrl) {
+        // Save signature to backend
+        await fetch('/api/save-signature', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            token,
+            signatureDataUrl,
+          }),
+        });
+      }
+
+      // Navigate to next page
+      router.push(`/c/${token}/booking-details`);
+    } catch (error) {
+      console.error('Error saving signature:', error);
+      // Continue anyway - don't block user
       router.push(`/c/${token}/booking-details`);
     }
   };

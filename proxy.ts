@@ -111,8 +111,8 @@ export default async function proxy(request: NextRequest) {
     });
   }
 
-  // Minibar access: /minibar/* (allows lastName + roomNumber OR session)
-  if (pathname.startsWith('/minibar')) {
+  // Minibar access: /minibar/* or /mini-bar/* (allows lastName + roomNumber OR session)
+  if (pathname.startsWith('/minibar') || pathname.startsWith('/mini-bar')) {
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-hotel-subdomain', subdomain);
 

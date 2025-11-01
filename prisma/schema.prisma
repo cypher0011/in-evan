@@ -107,31 +107,34 @@ model GuestToken {
 }
 
 model Booking {
-  id                 String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  guestId            String               @map("guest_id") @db.Uuid
-  hotelId            String               @map("hotel_id") @db.Uuid
-  tokenId            String?              @map("token_id") @db.Uuid
-  roomNumber         String               @map("room_number")
-  roomType           String?              @map("room_type")
-  checkInDate        DateTime             @map("check_in_date") @db.Date
-  checkOutDate       DateTime             @map("check_out_date") @db.Date
-  numberOfGuests     Int?                 @default(1) @map("number_of_guests")
-  bookingSource      String?              @map("booking_source")
-  bookingReference   String?              @map("booking_reference")
-  baseAmount         Decimal?             @default(0) @map("base_amount") @db.Decimal(10, 2)
-  enhancementsAmount Decimal?             @default(0) @map("enhancements_amount") @db.Decimal(10, 2)
-  totalAmount        Decimal?             @default(dbgenerated("(base_amount + enhancements_amount)")) @map("total_amount") @db.Decimal(10, 2)
-  status             String               @default("pending")
-  notes              String?
-  createdAt          DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt          DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
-  enhancements       BookingEnhancement[]
-  guest              Guest                @relation(fields: [guestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  hotel              Hotel                @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  token              GuestToken?          @relation(fields: [tokenId], references: [id], onUpdate: NoAction)
-  deliveredOrders    DeliveredOrder[]
-  sessions           GuestSession[]
-  orders             Order[]
+  id                       String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  guestId                  String               @map("guest_id") @db.Uuid
+  hotelId                  String               @map("hotel_id") @db.Uuid
+  tokenId                  String?              @map("token_id") @db.Uuid
+  roomNumber               String               @map("room_number")
+  roomType                 String?              @map("room_type")
+  roomImageUrl             String?              @map("room_image_url")
+  checkInDate              DateTime             @map("check_in_date") @db.Date
+  checkOutDate             DateTime             @map("check_out_date") @db.Date
+  numberOfGuests           Int?                 @default(1) @map("number_of_guests")
+  bookingSource            String?              @map("booking_source")
+  bookingReference         String?              @map("booking_reference")
+  baseAmount               Decimal?             @default(0) @map("base_amount") @db.Decimal(10, 2)
+  enhancementsAmount       Decimal?             @default(0) @map("enhancements_amount") @db.Decimal(10, 2)
+  totalAmount              Decimal?             @default(dbgenerated("(base_amount + enhancements_amount)")) @map("total_amount") @db.Decimal(10, 2)
+  status                   String               @default("pending")
+  notes                    String?
+  signatureDataUrl         String?              @map("signature_data_url")
+  availableEnhancementIds  Json?                @default("[]") @map("available_enhancement_ids")
+  createdAt                DateTime             @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime             @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  enhancements             BookingEnhancement[]
+  guest                    Guest                @relation(fields: [guestId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  hotel                    Hotel                @relation(fields: [hotelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  token                    GuestToken?          @relation(fields: [tokenId], references: [id], onUpdate: NoAction)
+  deliveredOrders          DeliveredOrder[]
+  sessions                 GuestSession[]
+  orders                   Order[]
 
   @@index([checkInDate, checkOutDate], map: "idx_bookings_dates")
   @@index([guestId], map: "idx_bookings_guest_id")

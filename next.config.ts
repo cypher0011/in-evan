@@ -19,6 +19,11 @@ const nextConfig: NextConfig = {
         hostname: 'olink-bucket-data.s3.eu-north-1.amazonaws.com',
         pathname: '/hotel-images/**',
       },
+      {
+        protocol: 'https',
+        hostname: 's3.eu-north-1.amazonaws.com',
+        pathname: '/olink-bucket-data/**',
+      },
     ],
   },
 
